@@ -2,25 +2,24 @@ project "AthleteScoreboard"
     kind "ConsoleApp"
     language "C++"
     cppdialect "C++20"
-    compileas "Module"
 
     targetdir "%{BUILD_DIRECTORY}/bin/%{cfg.buildcfg}"
     objdir "%{BUILD_DIRECTORY}/bin/obj/%{cfg.buildcfg}"
 
     files {
-        "modules/**.ixx",
+        "include/**.h",
         "src/**.cpp",
     }
 
     vpaths {
         ["*"] = {
-            "modules/**",
+            "include/**",
             "src/**",
         },
     }
 
     includedirs {
-        "modules",
+        "include",
         "%{DependencyIncludes.lua}",
         "%{DependencyIncludes.SDL2}",
         "%{DependencyIncludes.SDL2}/SDL2",
