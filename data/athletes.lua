@@ -1,11 +1,12 @@
 COLOURS = {
-    background = create_colour(64, 64, 64),
+    background = create_colour(32, 32, 32),
+    sidebar = create_colour(96, 96, 96),
 }
 
 DIMENSIONS = {
     aspect_ratio = 16.0 / 9.0,
     bar_height = 32,
-    distance_between_bars = 8,
+    distance_between_bars = 12,
 }
 
 ATHLETES = {
@@ -13,7 +14,7 @@ ATHLETES = {
         colour = create_colour(0, 127, 255),
 
         current_score = 0,
-        points_to_add = 100,
+        points_to_add = 1,
 
         is_eliminated = false,
     },
@@ -21,7 +22,7 @@ ATHLETES = {
         colour = create_colour(0, 0, 0),
 
         current_score = 0,
-        points_to_add = 90,
+        points_to_add = 2,
 
         is_eliminated = false,
     },
@@ -29,7 +30,7 @@ ATHLETES = {
         colour = create_colour(0, 0, 255),
 
         current_score = 0,
-        points_to_add = 80,
+        points_to_add = 3,
 
         is_eliminated = false,
     },
@@ -37,7 +38,7 @@ ATHLETES = {
         colour = create_colour(99, 51, 28),
 
         current_score = 0,
-        points_to_add = 70,
+        points_to_add = 4,
 
         is_eliminated = false,
     },
@@ -45,7 +46,7 @@ ATHLETES = {
         colour = create_colour(0, 255, 255),
 
         current_score = 0,
-        points_to_add = 60,
+        points_to_add = 5,
 
         is_eliminated = false,
     },
@@ -53,7 +54,7 @@ ATHLETES = {
         colour = create_colour(0, 100, 0),
 
         current_score = 0,
-        points_to_add = 55,
+        points_to_add = 6,
 
         is_eliminated = false,
     },
@@ -61,7 +62,7 @@ ATHLETES = {
         colour = create_colour(255, 165, 0),
 
         current_score = 0,
-        points_to_add = 50,
+        points_to_add = 7,
 
         is_eliminated = false,
     },
@@ -69,7 +70,7 @@ ATHLETES = {
         colour = create_colour(45, 185, 45),
 
         current_score = 0,
-        points_to_add = 45,
+        points_to_add = 8,
 
         is_eliminated = false,
     },
@@ -77,7 +78,7 @@ ATHLETES = {
         colour = create_colour(128, 128, 128),
 
         current_score = 0,
-        points_to_add = 40,
+        points_to_add = 10,
 
         is_eliminated = false,
     },
@@ -85,7 +86,7 @@ ATHLETES = {
         colour = create_colour(75, 0, 130),
 
         current_score = 0,
-        points_to_add = 35,
+        points_to_add = 12,
 
         is_eliminated = false,
     },
@@ -93,7 +94,7 @@ ATHLETES = {
         colour = create_colour(170, 170, 238),
 
         current_score = 0,
-        points_to_add = 30,
+        points_to_add = 14,
 
         is_eliminated = false,
     },
@@ -101,7 +102,7 @@ ATHLETES = {
         colour = create_colour(0, 255, 0),
 
         current_score = 0,
-        points_to_add = 25,
+        points_to_add = 16,
 
         is_eliminated = false,
     },
@@ -109,7 +110,7 @@ ATHLETES = {
         colour = create_colour(255, 0, 255),
 
         current_score = 0,
-        points_to_add = 22,
+        points_to_add = 18,
 
         is_eliminated = false,
     },
@@ -125,7 +126,7 @@ ATHLETES = {
         colour = create_colour(0, 0, 128),
 
         current_score = 0,
-        points_to_add = 18,
+        points_to_add = 22,
 
         is_eliminated = false,
     },
@@ -133,7 +134,7 @@ ATHLETES = {
         colour = create_colour(128, 128, 0),
 
         current_score = 0,
-        points_to_add = 16,
+        points_to_add = 25,
 
         is_eliminated = false,
     },
@@ -141,7 +142,7 @@ ATHLETES = {
         colour = create_colour(255, 109, 0),
 
         current_score = 0,
-        points_to_add = 14,
+        points_to_add = 30,
 
         is_eliminated = false,
     },
@@ -149,7 +150,7 @@ ATHLETES = {
         colour = create_colour(255, 203, 164),
 
         current_score = 0,
-        points_to_add = 12,
+        points_to_add = 35,
 
         is_eliminated = false,
     },
@@ -157,7 +158,7 @@ ATHLETES = {
         colour = create_colour(255, 188, 244),
 
         current_score = 0,
-        points_to_add = 10,
+        points_to_add = 40,
 
         is_eliminated = false,
     },
@@ -165,7 +166,7 @@ ATHLETES = {
         colour = create_colour(160, 32, 240),
 
         current_score = 0,
-        points_to_add = 8,
+        points_to_add = 45,
 
         is_eliminated = false,
     },
@@ -173,7 +174,7 @@ ATHLETES = {
         colour = create_colour(255, 0, 0),
 
         current_score = 0,
-        points_to_add = 7,
+        points_to_add = 50,
 
         is_eliminated = false,
     },
@@ -181,7 +182,7 @@ ATHLETES = {
         colour = create_colour(192, 192, 192),
 
         current_score = 0,
-        points_to_add = 6,
+        points_to_add = 55,
 
         is_eliminated = false,
     },
@@ -189,7 +190,7 @@ ATHLETES = {
         colour = create_colour(210, 180, 140),
 
         current_score = 0,
-        points_to_add = 5,
+        points_to_add = 60,
 
         is_eliminated = false,
     },
@@ -197,7 +198,7 @@ ATHLETES = {
         colour = create_colour(0, 128, 128),
 
         current_score = 0,
-        points_to_add = 4,
+        points_to_add = 70,
 
         is_eliminated = false,
     },
@@ -205,7 +206,7 @@ ATHLETES = {
         colour = create_colour(0, 250, 154),
 
         current_score = 0,
-        points_to_add = 3,
+        points_to_add = 80,
 
         is_eliminated = false,
     },
@@ -213,7 +214,7 @@ ATHLETES = {
         colour = create_colour(255, 255, 255),
 
         current_score = 0,
-        points_to_add = 2,
+        points_to_add = 90,
 
         is_eliminated = false,
     },
@@ -221,7 +222,7 @@ ATHLETES = {
         colour = create_colour(255, 255, 0),
 
         current_score = 0,
-        points_to_add = 1,
+        points_to_add = 100,
 
         is_eliminated = false,
     },

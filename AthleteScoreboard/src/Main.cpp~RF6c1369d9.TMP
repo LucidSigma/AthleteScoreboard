@@ -21,15 +21,12 @@ struct Athlete final
     std::string name;
     SDL_Colour colour;
 
-    std::uint32_t originalScore;
     std::uint32_t currentScore;
-    std::uint32_t newScore;
     std::int32_t pointsToAdd;
 
     bool isEliminated;
 
     std::uint32_t currentRanking;
-    std::int32_t originalPosition;
     std::int32_t currentPosition;
 
     std::uint32_t newRanking;
@@ -97,23 +94,20 @@ auto main(const int argc, char** const argv) -> int
 
     for (std::size_t i = 0u; i < athletes.size(); ++i)
     {
-        athletes[i].originalScore = athletes[i].currentScore;
         athletes[i].currentRanking = static_cast<std::uint32_t>(i);
         athletes[i].currentPosition = yOffset;
-        athletes[i].originalPosition = athletes[i].currentPosition;
 
         yOffset += static_cast<std::int32_t>(barHeight + distanceBetweenBars);
     }
 
     std::vector<Athlete> newAthletes = athletes;
+    std::ranges::sort(newAthletes, [](const auto& lhs, const auto& rhs) -> bool { return lhs.currentScore < rhs.currentScore; });
 
     for (auto& athlete : newAthletes)
     {
         athlete.currentScore += athlete.pointsToAdd;
         athlete.pointsToAdd = 0;
     }
-
-    std::ranges::sort(newAthletes, std::greater());
 
     for (auto& athlete : athletes)
     {
@@ -124,8 +118,7 @@ auto main(const int argc, char** const argv) -> int
 
         const std::size_t newAthleteIndex = newAthleteLocation - std::cbegin(newAthletes);
 
-        athlete.newScore = newAthleteLocation->currentScore;
-        athlete.newRanking = static_cast<std::uint32_t>(newAthleteIndex + 1u);
+        athlete.newRanking = static_cast<std::uint32_t>(newAthleteIndex);
         athlete.newPosition = static_cast<std::int32_t>(static_cast<std::uint32_t>(newAthleteIndex) * (barHeight + distanceBetweenBars) + distanceBetweenBars);
     }
 
@@ -169,21 +162,8 @@ auto main(const int argc, char** const argv) -> int
     std::atomic_bool isRunning = true;
     SDL_Event event{ };
 
-    std::float_t counter = 0.0f;
-
     while (isRunning)
     {
-        if (counter <= 1.0f)
-        {
-            for (auto& athlete : athletes)
-            {
-                athlete.currentScore = std::lerp(athlete.originalScore, athlete.newScore, counter);
-                athlete.currentPosition = std::lerp(athlete.originalPosition, athlete.newPosition, counter);
-            }
-
-            counter += 0.00005f;
-        }
-
         SDL_SetRenderDrawColor(renderer, backgroundColour.r, backgroundColour.g, backgroundColour.b, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(renderer);
 
@@ -205,8 +185,8 @@ auto main(const int argc, char** const argv) -> int
         {
             const SDL_Rect currentAthleteBar{
                 .x = sidebar.w,
-                .y = athlete.currentPosition,
-                .w = static_cast<std::int32_t>(athlete.currentScore) * 10 + 5,
+                .y = athlete.newPosition,
+                .w = 500,
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
