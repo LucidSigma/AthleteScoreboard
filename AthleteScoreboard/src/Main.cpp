@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <SDL2/SDL.h>
@@ -15,6 +16,41 @@
 #include <sol/sol.hpp>
 
 #include "ScriptEngine.h"
+
+class TextCache final
+{
+private:
+    TTF_Font* m_font = nullptr;
+    SDL_Renderer* m_renderer = nullptr;
+
+    std::unordered_map<std::string, SDL_Texture*> m_textureLookup{ };
+
+public:
+    TextCache(TTF_Font* const font, SDL_Renderer* const renderer)
+        : m_font(font), m_renderer(renderer)
+    { }
+
+    [[nodiscard]] auto Get(const std::string& text, const SDL_Colour& colour) -> SDL_Texture*
+    {
+        if (!m_textureLookup.contains(text))
+        {
+            SDL_Surface* textSurface = TTF_RenderText_Blended(m_font, text.c_str(), SDL_Colour{ 0xFFu, 0xFFu, 0xFFu, SDL_ALPHA_OPAQUE });
+
+            if (textSurface == nullptr)
+            {
+                return nullptr;
+            }
+
+            m_textureLookup[text] = SDL_CreateTextureFromSurface(m_renderer, textSurface);
+        }
+
+        const auto texture = m_textureLookup.at(text);
+
+        SDL_SetTextureColorMod(texture, colour.r, colour.g, colour.b);
+
+        return texture;
+    }
+};
 
 struct Athlete final
 {
@@ -56,6 +92,16 @@ auto main(const int argc, char** const argv) -> int
         return EXIT_FAILURE;
     }
 
+    if (TTF_Init() != 0)
+    {
+        spdlog::error("Failed to initialise SDL2_TTF: {}", TTF_GetError());
+        std::cin.get();
+
+        SDL_Quit();
+
+        return EXIT_FAILURE;
+    }
+
     ScriptEngine scriptEngine;
 
     if (!scriptEngine.IsValid())
@@ -63,6 +109,7 @@ auto main(const int argc, char** const argv) -> int
         spdlog::error("Failed to load athletes.toml file or it had an error.");
         std::cin.get();
 
+        TTF_Quit();
         SDL_Quit();
 
         return EXIT_FAILURE;
@@ -143,6 +190,7 @@ auto main(const int argc, char** const argv) -> int
         spdlog::error("Failed to create window: {}", SDL_GetError());
         std::cin.get();
 
+        TTF_Quit();
         SDL_Quit();
 
         return EXIT_FAILURE;
@@ -158,10 +206,27 @@ auto main(const int argc, char** const argv) -> int
         SDL_DestroyWindow(window);
         window = nullptr;
 
+        TTF_Quit();
         SDL_Quit();
 
         return EXIT_FAILURE;
     }
+
+    char* applicationBasePath = SDL_GetBasePath();
+
+    std::string sidebarFontPath = std::string(applicationBasePath);
+    sidebarFontPath += scriptEngine["FONTS"]["sidebar"];
+
+    std::string eliminatedFontPath = std::string(applicationBasePath);
+    eliminatedFontPath += scriptEngine["FONTS"]["eliminated"];
+
+    SDL_free(applicationBasePath);
+    applicationBasePath = nullptr;
+
+    TextCache textCache(TTF_OpenFont(sidebarFontPath.c_str(), 28), renderer);
+    TextCache eliminatedTextCache(TTF_OpenFont(eliminatedFontPath.c_str(), 28), renderer);
+
+    const auto eliminatedText = eliminatedTextCache.Get("ELIMINATED", SDL_Colour(0xFFu, 0x00u, 0x00u, SDL_ALPHA_OPAQUE));
 
     const SDL_Colour backgroundColour = scriptEngine["COLOURS"]["background"];
     const SDL_Colour sidebarColour = scriptEngine["COLOURS"]["sidebar"];
@@ -214,6 +279,8 @@ auto main(const int argc, char** const argv) -> int
             SDL_RenderFillRect(renderer, &currentAthleteBar);
         }
 
+        SDL_RenderCopy(renderer, eliminatedText, nullptr, nullptr);
+
         SDL_RenderPresent(renderer);
 
         while (SDL_PollEvent(&event) == 1)
@@ -242,6 +309,7 @@ auto main(const int argc, char** const argv) -> int
     SDL_DestroyWindow(window);
     window = nullptr;
 
+    TTF_Quit();
     SDL_Quit();
 
     return EXIT_SUCCESS;

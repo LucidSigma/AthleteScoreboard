@@ -9,6 +9,11 @@ DIMENSIONS = {
     distance_between_bars = 12,
 }
 
+FONTS = {
+    sidebar = "data/fonts/Manrope-Regular.ttf",
+    eliminated = "data/fonts/Manrope-Bold.ttf",
+}
+
 ATHLETES = {
     Azure = {
         colour = create_colour(0, 127, 255),
