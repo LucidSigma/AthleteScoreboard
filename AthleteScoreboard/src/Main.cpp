@@ -58,7 +58,7 @@ struct Athlete final
     SDL_Colour colour;
 
     std::uint32_t originalScore;
-    std::uint32_t currentScore;
+    std::float_t currentScore;
     std::uint32_t newScore;
     std::int32_t pointsToAdd;
 
@@ -66,7 +66,7 @@ struct Athlete final
 
     std::uint32_t currentRanking;
     std::int32_t originalPosition;
-    std::int32_t currentPosition;
+    std::float_t currentPosition;
 
     std::uint32_t newRanking;
     std::int32_t newPosition;
@@ -144,10 +144,10 @@ auto main(const int argc, char** const argv) -> int
 
     for (std::size_t i = 0u; i < athletes.size(); ++i)
     {
-        athletes[i].originalScore = athletes[i].currentScore;
+        athletes[i].originalScore = static_cast<std::uint32_t>(athletes[i].currentScore);
         athletes[i].currentRanking = static_cast<std::uint32_t>(i);
-        athletes[i].currentPosition = yOffset;
-        athletes[i].originalPosition = athletes[i].currentPosition;
+        athletes[i].currentPosition = static_cast<std::float_t>(yOffset);
+        athletes[i].originalPosition = static_cast<std::int32_t>(athletes[i].currentPosition);
 
         yOffset += static_cast<std::int32_t>(barHeight + distanceBetweenBars);
     }
@@ -156,7 +156,7 @@ auto main(const int argc, char** const argv) -> int
 
     for (auto& athlete : newAthletes)
     {
-        athlete.currentScore += athlete.pointsToAdd;
+        athlete.currentScore += static_cast<std::float_t>(athlete.pointsToAdd);
         athlete.pointsToAdd = 0;
     }
 
@@ -171,7 +171,7 @@ auto main(const int argc, char** const argv) -> int
 
         const std::size_t newAthleteIndex = newAthleteLocation - std::cbegin(newAthletes);
 
-        athlete.newScore = newAthleteLocation->currentScore;
+        athlete.newScore = static_cast<std::uint32_t>(newAthleteLocation->currentScore);
         athlete.newRanking = static_cast<std::uint32_t>(newAthleteIndex + 1u);
         athlete.newPosition = static_cast<std::int32_t>(static_cast<std::uint32_t>(newAthleteIndex) * (barHeight + distanceBetweenBars) + distanceBetweenBars);
     }
@@ -223,8 +223,10 @@ auto main(const int argc, char** const argv) -> int
     SDL_free(applicationBasePath);
     applicationBasePath = nullptr;
 
-    TextCache textCache(TTF_OpenFont(sidebarFontPath.c_str(), 28), renderer);
-    TextCache eliminatedTextCache(TTF_OpenFont(eliminatedFontPath.c_str(), 28), renderer);
+    const std::int32_t fontPointSize = static_cast<std::int32_t>(static_cast<std::float_t>(barHeight) * (72.0f / 96.0f));
+
+    TextCache textCache(TTF_OpenFont(sidebarFontPath.c_str(), fontPointSize), renderer);
+    TextCache eliminatedTextCache(TTF_OpenFont(eliminatedFontPath.c_str(), fontPointSize), renderer);
 
     const auto eliminatedText = eliminatedTextCache.Get("ELIMINATED", SDL_Colour(0xFFu, 0x00u, 0x00u, SDL_ALPHA_OPAQUE));
 
@@ -242,11 +244,20 @@ auto main(const int argc, char** const argv) -> int
         {
             for (auto& athlete : athletes)
             {
-                athlete.currentScore = std::lerp(athlete.originalScore, athlete.newScore, counter);
-                athlete.currentPosition = std::lerp(athlete.originalPosition, athlete.newPosition, counter);
+                athlete.currentScore = std::lerp(static_cast<std::float_t>(athlete.originalScore), static_cast<std::float_t>(athlete.newScore), counter);
+                athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), counter);
             }
 
             counter += 0.00005f;
+
+            if (counter != 1.0f && counter > 1.0f) [[unlikely]]
+            {
+                for (auto& athlete : athletes)
+                {
+                    athlete.currentScore = std::lerp(static_cast<std::float_t>(athlete.originalScore), static_cast<std::float_t>(athlete.newScore), 1.0f);
+                    athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), 1.0f);
+                }
+            }
         }
 
         SDL_SetRenderDrawColor(renderer, backgroundColour.r, backgroundColour.g, backgroundColour.b, SDL_ALPHA_OPAQUE);
@@ -254,10 +265,12 @@ auto main(const int argc, char** const argv) -> int
 
         SDL_SetRenderDrawColor(renderer, sidebarColour.r, sidebarColour.g, sidebarColour.b, SDL_ALPHA_OPAQUE);
 
+        const std::int32_t sidebarWidth = 256;
+
         const SDL_Rect sidebar{
             .x = 0,
             .y = 0,
-            .w = 400,
+            .w = sidebarWidth,
             .h = static_cast<std::int32_t>(windowHeight),
         };
 
@@ -270,16 +283,62 @@ auto main(const int argc, char** const argv) -> int
         {
             const SDL_Rect currentAthleteBar{
                 .x = sidebar.w,
-                .y = athlete.currentPosition,
-                .w = static_cast<std::int32_t>(athlete.currentScore) * 10 + 5,
+                .y = static_cast<std::int32_t>(athlete.currentPosition),
+                .w = static_cast<std::int32_t>(athlete.currentScore) + 5,
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
             SDL_SetRenderDrawColor(renderer, athlete.colour.r, athlete.colour.g, athlete.colour.b, SDL_ALPHA_OPAQUE);
             SDL_RenderFillRect(renderer, &currentAthleteBar);
-        }
 
-        SDL_RenderCopy(renderer, eliminatedText, nullptr, nullptr);
+            const auto athleteNameText = textCache.Get(athlete.name, athlete.colour);
+            std::int32_t width = 0;
+            std::int32_t height = 0;
+            SDL_QueryTexture(athleteNameText, nullptr, nullptr, &width, &height);
+
+            const std::float_t ratio = static_cast<std::float_t>(height) / static_cast<std::float_t>(barHeight);
+            std::int32_t newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
+
+            const SDL_Rect currentAthleteText{
+                .x = sidebarWidth - newWidth - 24,
+                .y = static_cast<std::int32_t>(athlete.currentPosition),
+                .w = newWidth,
+                .h = static_cast<std::int32_t>(barHeight),
+            };
+
+            SDL_RenderCopy(renderer, athleteNameText, nullptr, &currentAthleteText);
+
+            const auto athleteScoreText = textCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)), athlete.colour);
+            width = 0;
+            height = 0;
+            SDL_QueryTexture(athleteScoreText, nullptr, nullptr, &width, &height);
+
+            newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
+
+            const SDL_Rect currentAthleteScoreText{
+                .x = static_cast<std::int32_t>(athlete.currentScore) + 5 + 12 + sidebarWidth,
+                .y = static_cast<std::int32_t>(athlete.currentPosition),
+                .w = newWidth,
+                .h = static_cast<std::int32_t>(barHeight),
+            };
+
+            SDL_RenderCopy(renderer, athleteScoreText, nullptr, &currentAthleteScoreText);
+
+            SDL_SetRenderDrawColor(renderer, 0xFFu, 0xFFu, 0xFFu, SDL_ALPHA_OPAQUE);
+            const auto ordinalText = textCache.Get(std::to_string(athlete.currentRanking + 1u), SDL_Colour(0xFFu, 0xFFu, 0xFFu, SDL_ALPHA_OPAQUE));
+            SDL_QueryTexture(ordinalText, nullptr, nullptr, &width, &height);
+
+            newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
+
+            const SDL_Rect currentOrdinalText{
+                .x = 32,
+                .y = athlete.originalPosition,
+                .w = newWidth,
+                .h = static_cast<std::int32_t>(barHeight),
+            };
+
+            SDL_RenderCopy(renderer, ordinalText, nullptr, &currentOrdinalText);
+        }
 
         SDL_RenderPresent(renderer);
 

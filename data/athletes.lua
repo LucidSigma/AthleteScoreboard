@@ -1,17 +1,17 @@
 COLOURS = {
-    background = create_colour(32, 32, 32),
+    background = create_colour(64, 64, 64),
     sidebar = create_colour(96, 96, 96),
 }
 
 DIMENSIONS = {
     aspect_ratio = 16.0 / 9.0,
-    bar_height = 32,
+    bar_height = 37,
     distance_between_bars = 12,
 }
 
 FONTS = {
-    sidebar = "data/fonts/Manrope-Regular.ttf",
-    eliminated = "data/fonts/Manrope-Bold.ttf",
+    sidebar = "data/fonts/Manrope-Bold.ttf",
+    eliminated = "data/fonts/Manrope-ExtraBold.ttf",
 }
 
 ATHLETES = {
