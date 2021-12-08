@@ -17,6 +17,7 @@
 #include "Renderer.h"
 #include "ScriptEngine.h"
 #include "TextCache.h"
+#include "Utility.h"
 #include "Window.h"
 
 struct Athlete final
@@ -49,7 +50,7 @@ struct Athlete final
     return lhs.currentScore > rhs.currentScore;
 }
 
-auto main(const int argc, char** const argv) -> int
+auto main(const std::int32_t argc, char** const argv) -> int
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {
@@ -84,6 +85,7 @@ auto main(const int argc, char** const argv) -> int
 
     std::vector<Athlete> athletes{ };
 
+    // Load athletes from Lua file.
     for (const auto& [athleteName, athleteData] : scriptEngine.Get<sol::table>("ATHLETES"))
     {
         const bool isAthleteEliminated = athleteData.as<sol::table>()["is_eliminated"];
@@ -101,12 +103,15 @@ auto main(const int argc, char** const argv) -> int
 
     std::ranges::sort(athletes, std::greater());
 
+    // Load dimensions from Lua file.
     const std::float_t aspectRatio = scriptEngine["DIMENSIONS"]["aspect_ratio"];
     const std::uint32_t barHeight = scriptEngine["DIMENSIONS"]["bar_height"];
     const std::uint32_t distanceBetweenBars = scriptEngine["DIMENSIONS"]["distance_between_bars"];
 
+    // Determine window height based on number of athletes.
     const std::float_t windowHeight = static_cast<std::float_t>(static_cast<std::uint32_t>(athletes.size()) * (barHeight + distanceBetweenBars) + distanceBetweenBars);
 
+    // Calculate the athletes' vertical positions.
     std::int32_t yOffset = static_cast<std::int32_t>(distanceBetweenBars);
 
     for (std::size_t i = 0u; i < athletes.size(); ++i)
@@ -119,6 +124,7 @@ auto main(const int argc, char** const argv) -> int
         yOffset += static_cast<std::int32_t>(barHeight + distanceBetweenBars);
     }
 
+    // Determine the athletes' new scores.
     std::vector<Athlete> newAthletes = athletes;
     std::uint32_t maxScore = 0u;
 
@@ -132,6 +138,7 @@ auto main(const int argc, char** const argv) -> int
 
     std::ranges::sort(newAthletes, std::greater());
 
+    // Determine the athletes' new rankings and positions.
     for (auto& athlete : athletes)
     {
         const auto newAthleteLocation = std::ranges::find_if(
@@ -178,6 +185,7 @@ auto main(const int argc, char** const argv) -> int
         return EXIT_FAILURE;
     }
 
+    // Load fonts.
     char* applicationBasePath = SDL_GetBasePath();
 
     std::string sidebarFontPath = std::string(applicationBasePath);
@@ -196,15 +204,15 @@ auto main(const int argc, char** const argv) -> int
 
     // const auto eliminatedText = eliminatedTextCache.Get("ELIMINATED", SDL_Colour(0xFFu, 0x00u, 0x00u, SDL_ALPHA_OPAQUE));
 
+    // Get length of max score text.
     const auto maxScoreText = textCache.Get(std::to_string(maxScore));
-    std::int32_t width = 0;
-    std::int32_t height = 0;
-    SDL_QueryTexture(maxScoreText, nullptr, nullptr, &width, &height);
-    const std::float_t maxScoreRatio = static_cast<std::float_t>(height) / static_cast<std::float_t>(barHeight);
-    
-    const std::int32_t newMaxScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / maxScoreRatio);
+    const auto [maxScoreTextWidth, maxScoreTextHeight] = GetTextureSize(maxScoreText);
+    const std::float_t maxScoreRatio = static_cast<std::float_t>(maxScoreTextHeight) / static_cast<std::float_t>(barHeight);
+    const std::int32_t newMaxScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(maxScoreTextWidth) / maxScoreRatio);
+
     const std::int32_t sidebarWidth = scriptEngine["DIMENSIONS"]["sidebar_width"];
 
+    // Get the length of the longest bar (and how much it is inset from the right window border).
     const std::int32_t maxScoreBarLength = static_cast<std::int32_t>(windowHeight * aspectRatio) - sidebarWidth - newMaxScoreWidth - 5 - 12 - 16;
     const std::float_t pixelsPerPoint = static_cast<std::float_t>(maxScoreBarLength) / static_cast<std::float_t>(maxScore);
 
@@ -240,6 +248,7 @@ auto main(const int argc, char** const argv) -> int
 
         renderer.Clear(backgroundColour);
 
+        // Render sidebar.
         const SDL_Rect sidebar{
             .x = 0,
             .y = 0,
@@ -249,8 +258,10 @@ auto main(const int argc, char** const argv) -> int
 
         renderer.DrawRectangle(sidebar, sidebarColour);
 
+        // Render each athlete.
         for (const auto& athlete : athletes)
         {
+            // Render athlete's score bar.
             const SDL_Rect currentAthleteBar{
                 .x = sidebar.w,
                 .y = static_cast<std::int32_t>(athlete.currentPosition),
@@ -260,48 +271,47 @@ auto main(const int argc, char** const argv) -> int
 
             renderer.DrawRectangle(currentAthleteBar, athlete.colour);
 
+            // Render athlete's name.
             const auto athleteNameText = textCache.Get(athlete.name);
-            std::int32_t width = 0;
-            std::int32_t height = 0;
-            SDL_QueryTexture(athleteNameText, nullptr, nullptr, &width, &height);
+            const auto [nameWidth, nameHeight] = GetTextureSize(athleteNameText);
 
-            const std::float_t ratio = static_cast<std::float_t>(height) / static_cast<std::float_t>(barHeight);
-            std::int32_t newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
+            const std::float_t textureToBarRatio = static_cast<std::float_t>(nameHeight) / static_cast<std::float_t>(barHeight);
+            const std::int32_t newNameWidth = static_cast<std::int32_t>(static_cast<std::float_t>(nameWidth) / textureToBarRatio);
 
             const SDL_Rect currentAthleteText{
-                .x = sidebarWidth - newWidth - 24,
+                .x = sidebarWidth - newNameWidth - 24,
                 .y = static_cast<std::int32_t>(athlete.currentPosition),
-                .w = newWidth,
+                .w = newNameWidth,
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
             renderer.DrawTexture(athleteNameText, currentAthleteText, athlete.colour);
 
+            // Render athlete's score.
             const auto athleteScoreText = textCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)));
-            width = 0;
-            height = 0;
-            SDL_QueryTexture(athleteScoreText, nullptr, nullptr, &width, &height);
+            const auto [scoreWidth, scoreHeight] = GetTextureSize(athleteScoreText);
 
-            newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
+            const std::int32_t newScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(scoreWidth) / textureToBarRatio);
 
             const SDL_Rect currentAthleteScoreText{
                 .x = static_cast<std::int32_t>(athlete.currentScore * pixelsPerPoint) + 5 + 12 + sidebarWidth,
                 .y = static_cast<std::int32_t>(athlete.currentPosition),
-                .w = newWidth,
+                .w = newScoreWidth,
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
-            renderer.DrawTexture(athleteScoreText, currentAthleteScoreText, athlete.colour);
+            renderer.DrawTexture(athleteScoreText, currentAthleteScoreText);
 
-            const auto ordinalText = textCache.Get(std::to_string(athlete.currentRanking + 1u));
-            SDL_QueryTexture(ordinalText, nullptr, nullptr, &width, &height);
+            // Render ordinal number.
+            const auto ordinalText = textCache.Get(GetOrdinalNumber(athlete.currentRanking + 1u));
+            const auto [ordinalWidth, ordinalHeight] = GetTextureSize(ordinalText);
 
-            newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
+            const auto newOrdinalWidth = static_cast<std::int32_t>(static_cast<std::float_t>(ordinalWidth) / textureToBarRatio);
 
             const SDL_Rect currentOrdinalText{
                 .x = 32,
                 .y = athlete.originalPosition,
-                .w = newWidth,
+                .w = newOrdinalWidth,
                 .h = static_cast<std::int32_t>(barHeight),
             };
 

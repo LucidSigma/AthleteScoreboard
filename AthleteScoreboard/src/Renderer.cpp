@@ -31,10 +31,12 @@ auto Renderer::DrawTexture(SDL_Texture* const texture, const SDL_Rect& area, con
     if (colourMod.has_value())
     {
         SDL_SetTextureColorMod(texture, colourMod.value().r, colourMod.value().g, colourMod.value().b);
+        SDL_SetTextureAlphaMod(texture, colourMod.value().a);
     }
     else
     {
         SDL_SetTextureColorMod(texture, 0xFFu, 0xFFu, 0xFFu);
+        SDL_SetTextureAlphaMod(texture, SDL_ALPHA_OPAQUE);
     }
 
     SDL_RenderCopy(m_handle, texture, nullptr, &area);

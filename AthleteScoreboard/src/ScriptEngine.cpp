@@ -18,13 +18,13 @@ ScriptEngine::ScriptEngine()
 
     m_luaState.new_usertype<SDL_Colour>(
         "sdl_colour",
-        sol::constructors<SDL_Colour(std::uint8_t, std::uint8_t, std::uint8_t)>()
+        sol::constructors<SDL_Colour(std::uint8_t, std::uint8_t, std::uint8_t, std::uint8_t)>()
     );
 
     m_luaState.safe_script(
         R"LUA(
             function create_colour(r, g, b)
-                return sdl_colour.new(r, g, b)
+                return sdl_colour.new(r, g, b, 0xFF)
             end
         )LUA",
         sol::script_pass_on_error
