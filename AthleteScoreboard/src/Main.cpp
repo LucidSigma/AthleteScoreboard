@@ -7,7 +7,6 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include <SDL2/SDL.h>
@@ -15,60 +14,28 @@
 #include <spdlog/spdlog.h>
 #include <sol/sol.hpp>
 
+#include "Renderer.h"
 #include "ScriptEngine.h"
-
-class TextCache final
-{
-private:
-    TTF_Font* m_font = nullptr;
-    SDL_Renderer* m_renderer = nullptr;
-
-    std::unordered_map<std::string, SDL_Texture*> m_textureLookup{ };
-
-public:
-    TextCache(TTF_Font* const font, SDL_Renderer* const renderer)
-        : m_font(font), m_renderer(renderer)
-    { }
-
-    [[nodiscard]] auto Get(const std::string& text, const SDL_Colour& colour) -> SDL_Texture*
-    {
-        if (!m_textureLookup.contains(text))
-        {
-            SDL_Surface* textSurface = TTF_RenderText_Blended(m_font, text.c_str(), SDL_Colour{ 0xFFu, 0xFFu, 0xFFu, SDL_ALPHA_OPAQUE });
-
-            if (textSurface == nullptr)
-            {
-                return nullptr;
-            }
-
-            m_textureLookup[text] = SDL_CreateTextureFromSurface(m_renderer, textSurface);
-        }
-
-        const auto texture = m_textureLookup.at(text);
-
-        SDL_SetTextureColorMod(texture, colour.r, colour.g, colour.b);
-
-        return texture;
-    }
-};
+#include "TextCache.h"
+#include "Window.h"
 
 struct Athlete final
 {
     std::string name;
     SDL_Colour colour;
 
+    std::int32_t pointsToAdd;
+    bool isEliminated;
+
     std::uint32_t originalScore;
     std::float_t currentScore;
     std::uint32_t newScore;
-    std::int32_t pointsToAdd;
-
-    bool isEliminated;
 
     std::uint32_t currentRanking;
+    std::uint32_t newRanking;
+
     std::int32_t originalPosition;
     std::float_t currentPosition;
-
-    std::uint32_t newRanking;
     std::int32_t newPosition;
 };
 
@@ -125,9 +92,9 @@ auto main(const int argc, char** const argv) -> int
             Athlete{
                 .name = athleteName.as<std::string>(),
                 .colour = athleteData.as<sol::table>()["colour"],
-                .currentScore = athleteData.as<sol::table>()["current_score"],
                 .pointsToAdd = isAthleteEliminated ? 0 : athleteData.as<sol::table>()["points_to_add"],
                 .isEliminated = isAthleteEliminated,
+                .currentScore = athleteData.as<sol::table>()["current_score"],
             }
         );
     }
@@ -153,11 +120,14 @@ auto main(const int argc, char** const argv) -> int
     }
 
     std::vector<Athlete> newAthletes = athletes;
+    std::uint32_t maxScore = 0u;
 
     for (auto& athlete : newAthletes)
     {
         athlete.currentScore += static_cast<std::float_t>(athlete.pointsToAdd);
         athlete.pointsToAdd = 0;
+
+        maxScore = std::max(maxScore, static_cast<std::uint32_t>(athlete.currentScore));
     }
 
     std::ranges::sort(newAthletes, std::greater());
@@ -176,16 +146,15 @@ auto main(const int argc, char** const argv) -> int
         athlete.newPosition = static_cast<std::int32_t>(static_cast<std::uint32_t>(newAthleteIndex) * (barHeight + distanceBetweenBars) + distanceBetweenBars);
     }
 
-    SDL_Window* window = SDL_CreateWindow(
-        "Athlete Scoreboard",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        static_cast<std::int32_t>(windowHeight * aspectRatio),
-        static_cast<std::int32_t>(windowHeight),
-        SDL_WINDOW_SHOWN
+    const Window window(
+        Window::Size{
+            .width = static_cast<std::uint32_t>(windowHeight * aspectRatio),
+            .height = static_cast<std::uint32_t>(windowHeight),
+        },
+        "Athlte Scoreboard"
     );
 
-    if (window == nullptr)
+    if (!window.IsValid())
     {
         spdlog::error("Failed to create window: {}", SDL_GetError());
         std::cin.get();
@@ -196,15 +165,12 @@ auto main(const int argc, char** const argv) -> int
         return EXIT_FAILURE;
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    const Renderer renderer(window);
 
-    if (renderer == nullptr)
+    if (!renderer.IsValid())
     {
         spdlog::error("Failed to create renderer: {}", SDL_GetError());
         std::cin.get();
-
-        SDL_DestroyWindow(window);
-        window = nullptr;
 
         TTF_Quit();
         SDL_Quit();
@@ -228,7 +194,19 @@ auto main(const int argc, char** const argv) -> int
     TextCache textCache(TTF_OpenFont(sidebarFontPath.c_str(), fontPointSize), renderer);
     TextCache eliminatedTextCache(TTF_OpenFont(eliminatedFontPath.c_str(), fontPointSize), renderer);
 
-    const auto eliminatedText = eliminatedTextCache.Get("ELIMINATED", SDL_Colour(0xFFu, 0x00u, 0x00u, SDL_ALPHA_OPAQUE));
+    // const auto eliminatedText = eliminatedTextCache.Get("ELIMINATED", SDL_Colour(0xFFu, 0x00u, 0x00u, SDL_ALPHA_OPAQUE));
+
+    const auto maxScoreText = textCache.Get(std::to_string(maxScore));
+    std::int32_t width = 0;
+    std::int32_t height = 0;
+    SDL_QueryTexture(maxScoreText, nullptr, nullptr, &width, &height);
+    const std::float_t maxScoreRatio = static_cast<std::float_t>(height) / static_cast<std::float_t>(barHeight);
+    
+    const std::int32_t newMaxScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / maxScoreRatio);
+    const std::int32_t sidebarWidth = scriptEngine["DIMENSIONS"]["sidebar_width"];
+
+    const std::int32_t maxScoreBarLength = static_cast<std::int32_t>(windowHeight * aspectRatio) - sidebarWidth - newMaxScoreWidth - 5 - 12 - 16;
+    const std::float_t pixelsPerPoint = static_cast<std::float_t>(maxScoreBarLength) / static_cast<std::float_t>(maxScore);
 
     const SDL_Colour backgroundColour = scriptEngine["COLOURS"]["background"];
     const SDL_Colour sidebarColour = scriptEngine["COLOURS"]["sidebar"];
@@ -260,12 +238,7 @@ auto main(const int argc, char** const argv) -> int
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, backgroundColour.r, backgroundColour.g, backgroundColour.b, SDL_ALPHA_OPAQUE);
-        SDL_RenderClear(renderer);
-
-        SDL_SetRenderDrawColor(renderer, sidebarColour.r, sidebarColour.g, sidebarColour.b, SDL_ALPHA_OPAQUE);
-
-        const std::int32_t sidebarWidth = 256;
+        renderer.Clear(backgroundColour);
 
         const SDL_Rect sidebar{
             .x = 0,
@@ -274,24 +247,20 @@ auto main(const int argc, char** const argv) -> int
             .h = static_cast<std::int32_t>(windowHeight),
         };
 
-        SDL_RenderFillRect(
-            renderer,
-            &sidebar
-        );
+        renderer.DrawRectangle(sidebar, sidebarColour);
 
         for (const auto& athlete : athletes)
         {
             const SDL_Rect currentAthleteBar{
                 .x = sidebar.w,
                 .y = static_cast<std::int32_t>(athlete.currentPosition),
-                .w = static_cast<std::int32_t>(athlete.currentScore) + 5,
+                .w = static_cast<std::int32_t>(athlete.currentScore * pixelsPerPoint),
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
-            SDL_SetRenderDrawColor(renderer, athlete.colour.r, athlete.colour.g, athlete.colour.b, SDL_ALPHA_OPAQUE);
-            SDL_RenderFillRect(renderer, &currentAthleteBar);
+            renderer.DrawRectangle(currentAthleteBar, athlete.colour);
 
-            const auto athleteNameText = textCache.Get(athlete.name, athlete.colour);
+            const auto athleteNameText = textCache.Get(athlete.name);
             std::int32_t width = 0;
             std::int32_t height = 0;
             SDL_QueryTexture(athleteNameText, nullptr, nullptr, &width, &height);
@@ -306,9 +275,9 @@ auto main(const int argc, char** const argv) -> int
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
-            SDL_RenderCopy(renderer, athleteNameText, nullptr, &currentAthleteText);
+            renderer.DrawTexture(athleteNameText, currentAthleteText, athlete.colour);
 
-            const auto athleteScoreText = textCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)), athlete.colour);
+            const auto athleteScoreText = textCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)));
             width = 0;
             height = 0;
             SDL_QueryTexture(athleteScoreText, nullptr, nullptr, &width, &height);
@@ -316,16 +285,15 @@ auto main(const int argc, char** const argv) -> int
             newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
 
             const SDL_Rect currentAthleteScoreText{
-                .x = static_cast<std::int32_t>(athlete.currentScore) + 5 + 12 + sidebarWidth,
+                .x = static_cast<std::int32_t>(athlete.currentScore * pixelsPerPoint) + 5 + 12 + sidebarWidth,
                 .y = static_cast<std::int32_t>(athlete.currentPosition),
                 .w = newWidth,
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
-            SDL_RenderCopy(renderer, athleteScoreText, nullptr, &currentAthleteScoreText);
+            renderer.DrawTexture(athleteScoreText, currentAthleteScoreText, athlete.colour);
 
-            SDL_SetRenderDrawColor(renderer, 0xFFu, 0xFFu, 0xFFu, SDL_ALPHA_OPAQUE);
-            const auto ordinalText = textCache.Get(std::to_string(athlete.currentRanking + 1u), SDL_Colour(0xFFu, 0xFFu, 0xFFu, SDL_ALPHA_OPAQUE));
+            const auto ordinalText = textCache.Get(std::to_string(athlete.currentRanking + 1u));
             SDL_QueryTexture(ordinalText, nullptr, nullptr, &width, &height);
 
             newWidth = static_cast<std::int32_t>(static_cast<std::float_t>(width) / ratio);
@@ -337,10 +305,10 @@ auto main(const int argc, char** const argv) -> int
                 .h = static_cast<std::int32_t>(barHeight),
             };
 
-            SDL_RenderCopy(renderer, ordinalText, nullptr, &currentOrdinalText);
+            renderer.DrawTexture(ordinalText, currentOrdinalText);
         }
 
-        SDL_RenderPresent(renderer);
+        renderer.Present();
 
         while (SDL_PollEvent(&event) == 1)
         {
@@ -361,12 +329,6 @@ auto main(const int argc, char** const argv) -> int
             }
         }
     }
-
-    SDL_DestroyRenderer(renderer);
-    renderer = nullptr;
-
-    SDL_DestroyWindow(window);
-    window = nullptr;
 
     TTF_Quit();
     SDL_Quit();

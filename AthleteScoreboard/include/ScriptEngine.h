@@ -6,7 +6,7 @@
 
 #include <sol/sol.hpp>
 
-class ScriptEngine final
+class [[nodiscard]] ScriptEngine final
 {
 private:
     sol::state m_luaState{ };
