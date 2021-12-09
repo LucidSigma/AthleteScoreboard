@@ -64,7 +64,7 @@ public:
 
     auto LoadTextCaches(const ScriptEngine& scriptEngine, const Renderer& renderer) -> void;
 
-    auto Update() -> void;
+    auto Update(const std::float_t deltaTime) -> void;
     auto Render(const Renderer& renderer) -> void;
 
     [[nodiscard]] inline auto DidInitialiseSuccessfully() const noexcept -> bool { return m_didInitialiseSuccessfully; }

@@ -82,8 +82,10 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
     LoadOrdinalNumberTexts();
 }
 
-auto AthleteScoreboard::Update() -> void
+auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
 {
+    constexpr std::float_t SecondsPerFullInterpolation = 7.5f;
+
     if (m_interpolation <= 1.0f)
     {
         for (auto& athlete : m_athletes)
@@ -92,7 +94,7 @@ auto AthleteScoreboard::Update() -> void
             athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), m_interpolation);
         }
 
-        m_interpolation += 0.00005f;
+        m_interpolation += (1.0f / SecondsPerFullInterpolation) * deltaTime;
 
         if (m_interpolation != 1.0f && m_interpolation > 1.0f) [[unlikely]]
         {

@@ -1,4 +1,5 @@
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -117,11 +118,20 @@ auto main(const std::int32_t argc, char** const argv) -> int
         }
 
         std::atomic_bool isRunning = true;
+        auto tickCount = std::chrono::steady_clock::now();
+
         SDL_Event event{ };
 
         while (isRunning)
         {
-            athleteScoreboard.Update();
+            const auto newTickCount = std::chrono::steady_clock::now();
+            const auto frameTicks = newTickCount - tickCount;
+            tickCount = newTickCount;
+
+            const std::float_t deltaTime = static_cast<std::float_t>(frameTicks.count()) /
+                static_cast<std::float_t>(std::chrono::steady_clock::period::den);
+
+            athleteScoreboard.Update(deltaTime);
             athleteScoreboard.Render(renderer);
 
             renderer.Present();

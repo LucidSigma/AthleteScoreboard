@@ -1,16 +1,22 @@
 COLOURS = {
-    background = create_colour(64, 64, 64),
-    sidebar = create_colour(96, 96, 96),
+    background = create_colour(96, 96, 96),
+    sidebar = create_colour(64, 64, 64),
 }
 
 DIMENSIONS = {
     aspect_ratio = 16.0 / 9.0,
     bar_height = 37,
     distance_between_bars = 12,
+    min_score_bar_length = 8,
+    sidebar_width = 288,
+    distance_between_bar_and_score_text = 12,
+    distance_between_score_text_and_window_right = 12,
+    distance_between_score_text_and_eliminated_text = 12,
+    distance_between_ordinal_numbers_and_window_left = 12,
 }
 
 FONTS = {
-    sidebar = "data/fonts/Manrope-Bold.ttf",
+    athletes = "data/fonts/Manrope-Bold.ttf",
     eliminated = "data/fonts/Manrope-ExtraBold.ttf",
 }
 
