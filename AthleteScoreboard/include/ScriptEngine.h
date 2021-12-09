@@ -24,7 +24,7 @@ public:
         return m_luaState.get<T>(variableName);
     }
 
-    [[nodiscard]] inline auto operator [](const std::string_view variableName) -> decltype(auto) { return m_luaState[variableName]; }
+    [[nodiscard]] inline auto operator [](const std::string_view variableName) const -> decltype(auto) { return m_luaState[variableName]; }
 };
 
 #endif

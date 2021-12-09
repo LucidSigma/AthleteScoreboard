@@ -1,8 +1,14 @@
 #include "TextCache.h"
 
 TextCache::TextCache(TTF_Font* const font, const Renderer& renderer)
-    : m_font(font), m_renderer(renderer)
+    : m_font(font), m_renderer(&renderer)
 { }
+
+auto TextCache::Initialise(TTF_Font* const font, const Renderer& renderer) -> void
+{
+    m_font = font;
+    m_renderer = &renderer;
+}
 
 [[nodiscard]] auto TextCache::Get(const std::string& text) -> SDL_Texture*
 {
@@ -15,7 +21,7 @@ TextCache::TextCache(TTF_Font* const font, const Renderer& renderer)
             return nullptr;
         }
 
-        m_textureLookup[text] = SDL_CreateTextureFromSurface(m_renderer.GetRawHandle(), textSurface);
+        m_textureLookup[text] = SDL_CreateTextureFromSurface(m_renderer->GetRawHandle(), textSurface);
     }
 
     const auto texture = m_textureLookup.at(text);

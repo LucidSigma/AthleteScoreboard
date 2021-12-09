@@ -14,12 +14,15 @@ class [[nodiscard]] TextCache final
 {
 private:
     TTF_Font* m_font = nullptr;
-    const Renderer& m_renderer;
+    const Renderer* m_renderer = nullptr;
 
     std::unordered_map<std::string, SDL_Texture*> m_textureLookup{ };
 
 public:
+    TextCache() = default;
     TextCache(TTF_Font* const font, const Renderer& renderer);
+
+    auto Initialise(TTF_Font* const font, const Renderer& renderer) -> void;
 
     [[nodiscard]] auto Get(const std::string& text) -> SDL_Texture*;
 };

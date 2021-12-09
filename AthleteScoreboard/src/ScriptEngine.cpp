@@ -43,6 +43,10 @@ ScriptEngine::ScriptEngine()
     {
         spdlog::error("Error loading athletes.lua: {}", error.what());
     }
+    catch (...)
+    {
+        spdlog::error("An unknown error occurred when loading athletes.lua.");
+    }
 
     SDL_free(applicationBasePath);
     applicationBasePath = nullptr;
