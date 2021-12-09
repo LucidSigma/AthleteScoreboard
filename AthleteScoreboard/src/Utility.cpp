@@ -20,40 +20,25 @@
     switch (remainder)
     {
     case 1u:
-        if (numberString.length() >= 2u)
+        if (cardinalNumber % 100u == 11u)
         {
-            const std::string lastTwoCharacters = numberString.substr(numberString.length() - 2u);
-
-            if (lastTwoCharacters == "11")
-            {
-                return numberString + "th";
-            }
+            return numberString + "th";
         }
 
         return numberString + "st";
 
     case 2u:
-        if (numberString.length() >= 2u)
+        if (cardinalNumber % 100u == 12u)
         {
-            const std::string lastTwoCharacters = numberString.substr(numberString.length() - 2u);
-
-            if (lastTwoCharacters == "12")
-            {
-                return numberString + "th";
-            }
+            return numberString + "th";
         }
 
         return numberString + "nd";
 
     case 3u:
-        if (numberString.length() >= 2u)
+        if (cardinalNumber % 100u == 13u)
         {
-            const std::string lastTwoCharacters = numberString.substr(numberString.length() - 2u);
-
-            if (lastTwoCharacters == "13")
-            {
-                return numberString + "th";
-            }
+            return numberString + "th";
         }
 
         return numberString + "rd";
