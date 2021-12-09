@@ -19,6 +19,15 @@
 class [[nodiscard]] AthleteScoreboard final
 {
 private:
+    enum class [[nodiscard]] State
+    {
+        Idle,
+        UpdateScores,
+        UpdatePositions,
+        DisplayEliminatedText,
+        End,
+    };
+
     struct [[nodiscard]] Dimensions final
     {
         std::float_t aspectRatio = 0.0f;
@@ -44,6 +53,9 @@ private:
         SDL_Colour scoreText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
         SDL_Colour eliminatedText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
     };
+
+    State m_state = State::Idle;
+    bool m_readyToChangeState = true;
 
     Dimensions m_dimensions{ };
     std::float_t m_windowHeight = 0.0f;
@@ -76,6 +88,7 @@ public:
 
     auto Update(const std::float_t deltaTime) -> void;
     auto Render(const Renderer& renderer) -> void;
+    auto HandleKeyPress(const SDL_Scancode scancode) -> void;
 
     [[nodiscard]] inline auto DidInitialiseSuccessfully() const noexcept -> bool { return m_didInitialiseSuccessfully; }
 

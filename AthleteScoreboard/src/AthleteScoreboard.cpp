@@ -5,6 +5,7 @@
 #include <format>
 #include <functional>
 #include <iterator>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 
@@ -87,26 +88,80 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
 
 auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
 {
-    constexpr std::float_t SecondsPerFullInterpolation = 7.5f;
+    constexpr std::float_t SecondsPerFullInterpolation = 1.5f;
 
-    if (m_interpolation <= 1.0f)
+    switch (m_state)
     {
-        for (auto& athlete : m_athletes)
-        {
-            athlete.currentScore = std::lerp(static_cast<std::float_t>(athlete.originalScore), static_cast<std::float_t>(athlete.newScore), m_interpolation);
-            athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), m_interpolation);
-        }
+    case State::Idle:
+    case State::End:
+        break;
 
-        m_interpolation += (1.0f / SecondsPerFullInterpolation) * deltaTime;
-
-        if (m_interpolation != 1.0f && m_interpolation > 1.0f) [[unlikely]]
+    case State::UpdateScores:
+        if (m_interpolation <= 1.0f)
         {
             for (auto& athlete : m_athletes)
             {
-                athlete.currentScore = std::lerp(static_cast<std::float_t>(athlete.originalScore), static_cast<std::float_t>(athlete.newScore), 1.0f);
-                athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), 1.0f);
+                athlete.currentScore = std::lerp(static_cast<std::float_t>(athlete.originalScore), static_cast<std::float_t>(athlete.newScore), m_interpolation);
+            }
+
+            m_interpolation += (1.0f / SecondsPerFullInterpolation) * deltaTime;
+
+            if (m_interpolation != 1.0f && m_interpolation > 1.0f) [[unlikely]]
+            {
+                for (auto& athlete : m_athletes)
+                {
+                    athlete.currentScore = std::lerp(static_cast<std::float_t>(athlete.originalScore), static_cast<std::float_t>(athlete.newScore), 1.0f);
+                }
             }
         }
+        else if (!m_readyToChangeState)
+        {
+            m_readyToChangeState = true;
+        }
+
+        break;
+
+    case State::UpdatePositions:
+        if (m_interpolation <= 1.0f)
+        {
+            for (auto& athlete : m_athletes)
+            {
+                athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), m_interpolation);
+            }
+
+            m_interpolation += (1.0f / SecondsPerFullInterpolation) * deltaTime;
+
+            if (m_interpolation != 1.0f && m_interpolation > 1.0f) [[unlikely]]
+            {
+                for (auto& athlete : m_athletes)
+                {
+                    athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), 1.0f);
+                }
+            }
+        }
+        else if (!m_readyToChangeState)
+        {
+            m_readyToChangeState = true;
+        }
+
+        break;
+
+    case State::DisplayEliminatedText:
+        std::ranges::sort(m_athletes, std::greater());
+
+        for (auto& athlete : std::ranges::reverse_view(m_athletes))
+        {
+            if (!athlete.isEliminated)
+            {
+                athlete.isEliminated = true;
+
+                break;
+            }
+        }
+
+        m_state = State::End;
+
+        break;
     }
 }
 
@@ -124,6 +179,37 @@ auto AthleteScoreboard::Render(const Renderer& renderer) -> void
         RenderAthleteScoreBarText(renderer, athlete);
     }
 }
+
+auto AthleteScoreboard::HandleKeyPress(const SDL_Scancode scancode) -> void
+{
+    if (scancode == SDL_SCANCODE_RETURN && m_readyToChangeState)
+    {
+        switch (m_state)
+        {
+        case State::Idle:
+            m_state = State::UpdateScores;
+            m_readyToChangeState = false;
+            m_interpolation = 0.0f;
+
+            break;
+
+        case State::UpdateScores:
+            m_state = State::UpdatePositions;
+            m_readyToChangeState = false;
+            m_interpolation = 0.0f;
+
+            break;
+
+        case State::UpdatePositions:
+            m_state = State::DisplayEliminatedText;
+            m_readyToChangeState = false;
+            m_interpolation = 0.0f;
+
+            break;
+        }
+    }
+}
+
 
 auto AthleteScoreboard::LoadAthletes(const ScriptEngine& scriptEngine) -> void
 {

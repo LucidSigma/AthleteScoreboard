@@ -65,7 +65,7 @@ auto main(const std::int32_t argc, char** const argv) -> int
                 .width = static_cast<std::uint32_t>(athleteScoreboard.GetWindowHeight() * athleteScoreboard.GetAspectRatio()),
                 .height = static_cast<std::uint32_t>(athleteScoreboard.GetWindowHeight()),
             },
-            "Athlte Scoreboard"
+            "Athlete Scoreboard"
         );
 
         if (!window.IsValid())
@@ -145,6 +145,8 @@ auto main(const std::int32_t argc, char** const argv) -> int
                     {
                         isRunning = false;
                     }
+
+                    athleteScoreboard.HandleKeyPress(event.key.keysym.scancode);
 
                     break;
 
