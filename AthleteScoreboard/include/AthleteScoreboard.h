@@ -69,7 +69,7 @@ private:
     bool m_didInitialiseSuccessfully = false;
 
 public:
-    AthleteScoreboard(const ScriptEngine& scriptEngine);
+    explicit AthleteScoreboard(const ScriptEngine& scriptEngine);
     ~AthleteScoreboard() noexcept;
 
     auto LoadTextCaches(const ScriptEngine& scriptEngine, const Renderer& renderer) -> void;
@@ -98,7 +98,7 @@ private:
     auto RenderOrdinalNumbers(const Renderer& renderer) -> void;
     auto RenderAthleteScoreBar(const Renderer& renderer, const Athlete& athlete) -> void;
     auto RenderAthleteName(const Renderer& renderer, const Athlete& athlete) -> void;
-    auto RenderAthleteScore(const Renderer& renderer, const Athlete& athlete) -> void;
+    auto RenderAthleteScoreBarText(const Renderer& renderer, const Athlete& athlete) -> void;
 };
 
 #endif

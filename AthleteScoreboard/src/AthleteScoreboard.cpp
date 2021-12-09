@@ -121,7 +121,7 @@ auto AthleteScoreboard::Render(const Renderer& renderer) -> void
     {
         RenderAthleteScoreBar(renderer, athlete);
         RenderAthleteName(renderer, athlete);
-        RenderAthleteScore(renderer, athlete);
+        RenderAthleteScoreBarText(renderer, athlete);
     }
 }
 
@@ -288,7 +288,7 @@ auto AthleteScoreboard::RenderAthleteScoreBar(const Renderer& renderer, const At
     const SDL_Rect athleteScoreBarArea{
             .x = m_dimensions.sidebarWidth,
             .y = static_cast<std::int32_t>(athlete.currentPosition),
-            .w = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint),
+            .w = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) + m_dimensions.minScoreBarLength,
             .h = static_cast<std::int32_t>(m_dimensions.barHeight),
     };
 
@@ -313,13 +313,13 @@ auto AthleteScoreboard::RenderAthleteName(const Renderer& renderer, const Athlet
     renderer.DrawTexture(athleteNameText, athleteNameArea, athlete.colour);
 }
 
-auto AthleteScoreboard::RenderAthleteScore(const Renderer& renderer, const Athlete& athlete) -> void
+auto AthleteScoreboard::RenderAthleteScoreBarText(const Renderer& renderer, const Athlete& athlete) -> void
 {
     const auto athleteScoreText = m_athleteTextCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)));
     const auto [scoreWidth, scoreHeight] = GetTextureSize(athleteScoreText);
 
-    const std::float_t textureToBarRatio = static_cast<std::float_t>(scoreHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
-    const std::int32_t newScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(scoreWidth) / textureToBarRatio);
+    const std::float_t scoreTextureToBarRatio = static_cast<std::float_t>(scoreHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+    const std::int32_t newScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(scoreWidth) / scoreTextureToBarRatio);
 
     const SDL_Rect athleteScoreTextArea{
         .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
@@ -332,4 +332,25 @@ auto AthleteScoreboard::RenderAthleteScore(const Renderer& renderer, const Athle
     };
 
     renderer.DrawTexture(athleteScoreText, athleteScoreTextArea, m_colours.scoreText);
+
+    if (athlete.isEliminated)
+    {
+        const auto [eliminatedTextWidth, eliminatedTextHeight] = GetTextureSize(m_eliminatedText);
+        const std::float_t eliminatedTextureToBarRatio = static_cast<std::float_t>(eliminatedTextHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+        const std::int32_t newEliminatedTextWidth = static_cast<std::int32_t>(static_cast<std::float_t>(eliminatedTextWidth) / eliminatedTextureToBarRatio);
+
+        const SDL_Rect eliminatedTextArea{
+            .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
+                m_dimensions.minScoreBarLength +
+                m_dimensions.distanceBetweenBarAndScoreText +
+                m_dimensions.sidebarWidth +
+                newScoreWidth +
+                m_dimensions.distanceBetweenScoreTextAndEliminatedText,
+            .y = static_cast<std::int32_t>(athlete.currentPosition),
+            .w = newEliminatedTextWidth,
+            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
+        };
+
+        renderer.DrawTexture(m_eliminatedText, eliminatedTextArea, m_colours.eliminatedText);
+    }
 }

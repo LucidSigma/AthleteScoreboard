@@ -14,7 +14,7 @@ private:
     SDL_Renderer* m_handle = nullptr;
 
 public:
-    Renderer(const Window& window);
+    explicit Renderer(const Window& window);
     ~Renderer() noexcept;
 
     auto Clear(const SDL_Colour& colour) const -> void;
