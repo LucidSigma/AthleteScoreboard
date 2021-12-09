@@ -18,6 +18,7 @@ try
 {
     LoadAthletes(scriptEngine);
     LoadDimensions(scriptEngine);
+    LoadColours(scriptEngine);
 
     CalculateAthletePositions();
     CalculateNewAthleteScoresAndPositions();
@@ -76,6 +77,8 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
     m_athleteTextCache.Initialise(m_athleteFont, renderer);
     m_eliminatedTextCache.Initialise(m_eliminatedFont, renderer);
 
+    m_eliminatedText = m_eliminatedTextCache.Get("ELIMINATED");
+
     CalculateMaxScoreTextWidth();
     CalculatePixelsPerPoint();
 
@@ -109,66 +112,16 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
 
 auto AthleteScoreboard::Render(const Renderer& renderer) -> void
 {
-    renderer.Clear(m_backgroundColour);
+    renderer.Clear(m_colours.background);
 
-    // Render sidebar.
-    const SDL_Rect sidebar{
-        .x = 0,
-        .y = 0,
-        .w = m_dimensions.sidebarWidth,
-        .h = static_cast<std::int32_t>(m_windowHeight),
-    };
-
-    renderer.DrawRectangle(sidebar, m_sidebarColour);
-
+    RenderSidebar(renderer);
     RenderOrdinalNumbers(renderer);
 
-    // Render each athlete.
     for (const auto& athlete : m_athletes)
     {
-        // Render athlete's score bar.
-        const SDL_Rect currentAthleteBar{
-            .x = sidebar.w,
-            .y = static_cast<std::int32_t>(athlete.currentPosition),
-            .w = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint),
-            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
-        };
-
-        renderer.DrawRectangle(currentAthleteBar, athlete.colour);
-
-        // Render athlete's name.
-        const auto athleteNameText = m_athleteTextCache.Get(athlete.name);
-        const auto [nameWidth, nameHeight] = GetTextureSize(athleteNameText);
-
-        const std::float_t textureToBarRatio = static_cast<std::float_t>(nameHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
-        const std::int32_t newNameWidth = static_cast<std::int32_t>(static_cast<std::float_t>(nameWidth) / textureToBarRatio);
-
-        const SDL_Rect currentAthleteText{
-            .x = m_dimensions.sidebarWidth - newNameWidth - 24,
-            .y = static_cast<std::int32_t>(athlete.currentPosition),
-            .w = newNameWidth,
-            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
-        };
-
-        renderer.DrawTexture(athleteNameText, currentAthleteText, athlete.colour);
-
-        // Render athlete's score.
-        const auto athleteScoreText = m_athleteTextCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)));
-        const auto [scoreWidth, scoreHeight] = GetTextureSize(athleteScoreText);
-
-        const std::int32_t newScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(scoreWidth) / textureToBarRatio);
-
-        const SDL_Rect currentAthleteScoreText{
-            .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
-                m_dimensions.minScoreBarLength +
-                m_dimensions.distanceBetweenBarAndScoreText +
-                m_dimensions.sidebarWidth,
-            .y = static_cast<std::int32_t>(athlete.currentPosition),
-            .w = newScoreWidth,
-            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
-        };
-
-        renderer.DrawTexture(athleteScoreText, currentAthleteScoreText);
+        RenderAthleteScoreBar(renderer, athlete);
+        RenderAthleteName(renderer, athlete);
+        RenderAthleteScore(renderer, athlete);
     }
 }
 
@@ -202,14 +155,21 @@ auto AthleteScoreboard::LoadDimensions(const ScriptEngine& scriptEngine) -> void
     m_dimensions.distanceBetweenBarAndScoreText = scriptEngine["DIMENSIONS"]["distance_between_bar_and_score_text"];
     m_dimensions.distanceBetweenScoreTextAndWindowRight = scriptEngine["DIMENSIONS"]["distance_between_score_text_and_window_right"];
     m_dimensions.distanceBetweenScoreTextAndEliminatedText = scriptEngine["DIMENSIONS"]["distance_between_score_text_and_eliminated_text"];
+    m_dimensions.distanceBetweenNameAndSidebar = scriptEngine["DIMENSIONS"]["distance_between_name_and_sidebar"];
     m_dimensions.distanceBetweenOrdinalNumbersAndWindowLeft = scriptEngine["DIMENSIONS"]["distance_between_ordinal_numbers_and_window_left"];
 
     m_windowHeight = static_cast<std::float_t>(
         (static_cast<std::uint32_t>(m_athletes.size()) * (m_dimensions.barHeight + m_dimensions.distanceBetweenBars)) + m_dimensions.distanceBetweenBars
     );
+}
 
-    m_backgroundColour = scriptEngine["COLOURS"]["background"];
-    m_sidebarColour = scriptEngine["COLOURS"]["sidebar"];
+auto AthleteScoreboard::LoadColours(const ScriptEngine& scriptEngine) -> void
+{
+    m_colours.background = scriptEngine["COLOURS"]["background"];
+    m_colours.sidebar = scriptEngine["COLOURS"]["sidebar"];
+    m_colours.ordinalText = scriptEngine["COLOURS"]["ordinal_text"];
+    m_colours.scoreText = scriptEngine["COLOURS"]["score_text"];
+    m_colours.eliminatedText = scriptEngine["COLOURS"]["eliminated_text"];
 }
 
 auto AthleteScoreboard::CalculateAthletePositions() -> void
@@ -286,6 +246,18 @@ auto AthleteScoreboard::LoadOrdinalNumberTexts() -> void
     }
 }
 
+auto AthleteScoreboard::RenderSidebar(const Renderer& renderer) -> void
+{
+    const SDL_Rect sidebarArea{
+        .x = 0,
+        .y = 0,
+        .w = m_dimensions.sidebarWidth,
+        .h = static_cast<std::int32_t>(m_windowHeight),
+    };
+
+    renderer.DrawRectangle(sidebarArea, m_colours.sidebar);
+}
+
 auto AthleteScoreboard::RenderOrdinalNumbers(const Renderer& renderer) -> void
 {
     std::int32_t yOffset = static_cast<std::int32_t>(m_dimensions.distanceBetweenBars);
@@ -305,8 +277,59 @@ auto AthleteScoreboard::RenderOrdinalNumbers(const Renderer& renderer) -> void
             .h = static_cast<std::int32_t>(m_dimensions.barHeight),
         };
 
-        renderer.DrawTexture(ordinalText, currentOrdinalText);
+        renderer.DrawTexture(ordinalText, currentOrdinalText, m_colours.ordinalText);
 
         yOffset += static_cast<std::int32_t>(m_dimensions.barHeight + m_dimensions.distanceBetweenBars);
     }
+}
+
+auto AthleteScoreboard::RenderAthleteScoreBar(const Renderer& renderer, const Athlete& athlete) -> void
+{
+    const SDL_Rect athleteScoreBarArea{
+            .x = m_dimensions.sidebarWidth,
+            .y = static_cast<std::int32_t>(athlete.currentPosition),
+            .w = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint),
+            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
+    };
+
+    renderer.DrawRectangle(athleteScoreBarArea, athlete.colour);
+}
+
+auto AthleteScoreboard::RenderAthleteName(const Renderer& renderer, const Athlete& athlete) -> void
+{
+    const auto athleteNameText = m_athleteTextCache.Get(athlete.name);
+    const auto [nameWidth, nameHeight] = GetTextureSize(athleteNameText);
+
+    const std::float_t textureToBarRatio = static_cast<std::float_t>(nameHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+    const std::int32_t newNameWidth = static_cast<std::int32_t>(static_cast<std::float_t>(nameWidth) / textureToBarRatio);
+
+    const SDL_Rect athleteNameArea{
+        .x = m_dimensions.sidebarWidth - newNameWidth - m_dimensions.distanceBetweenNameAndSidebar,
+        .y = static_cast<std::int32_t>(athlete.currentPosition),
+        .w = newNameWidth,
+        .h = static_cast<std::int32_t>(m_dimensions.barHeight),
+    };
+
+    renderer.DrawTexture(athleteNameText, athleteNameArea, athlete.colour);
+}
+
+auto AthleteScoreboard::RenderAthleteScore(const Renderer& renderer, const Athlete& athlete) -> void
+{
+    const auto athleteScoreText = m_athleteTextCache.Get(std::to_string(static_cast<std::uint32_t>(athlete.currentScore)));
+    const auto [scoreWidth, scoreHeight] = GetTextureSize(athleteScoreText);
+
+    const std::float_t textureToBarRatio = static_cast<std::float_t>(scoreHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+    const std::int32_t newScoreWidth = static_cast<std::int32_t>(static_cast<std::float_t>(scoreWidth) / textureToBarRatio);
+
+    const SDL_Rect athleteScoreTextArea{
+        .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
+            m_dimensions.minScoreBarLength +
+            m_dimensions.distanceBetweenBarAndScoreText +
+            m_dimensions.sidebarWidth,
+        .y = static_cast<std::int32_t>(athlete.currentPosition),
+        .w = newScoreWidth,
+        .h = static_cast<std::int32_t>(m_dimensions.barHeight),
+    };
+
+    renderer.DrawTexture(athleteScoreText, athleteScoreTextArea, m_colours.scoreText);
 }

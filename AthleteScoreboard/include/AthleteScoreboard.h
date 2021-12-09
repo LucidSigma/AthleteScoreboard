@@ -31,15 +31,24 @@ private:
         std::int32_t distanceBetweenBarAndScoreText = 0;
         std::int32_t distanceBetweenScoreTextAndWindowRight = 0;
         std::int32_t distanceBetweenScoreTextAndEliminatedText = 0;
+        std::int32_t distanceBetweenNameAndSidebar = 0;
 
         std::int32_t distanceBetweenOrdinalNumbersAndWindowLeft = 0;
+    };
+
+    struct [[nodiscard]] Colours final
+    {
+        SDL_Colour background{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
+        SDL_Colour sidebar{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
+        SDL_Colour ordinalText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
+        SDL_Colour scoreText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
+        SDL_Colour eliminatedText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
     };
 
     Dimensions m_dimensions{ };
     std::float_t m_windowHeight = 0.0f;
 
-    SDL_Colour m_backgroundColour{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
-    SDL_Colour m_sidebarColour{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
+    Colours m_colours{ };
 
     std::vector<Athlete> m_athletes{ };
     std::uint32_t m_maxScore = 0u;
@@ -53,6 +62,7 @@ private:
     TTF_Font* m_eliminatedFont = nullptr;
 
     std::unordered_map<std::uint32_t, SDL_Texture*> m_ordinalNumberTexts{ };
+    SDL_Texture* m_eliminatedText = nullptr;
 
     std::float_t m_interpolation = 0.0f;
 
@@ -75,6 +85,7 @@ public:
 private:
     auto LoadAthletes(const ScriptEngine& scriptEngine) -> void;
     auto LoadDimensions(const ScriptEngine& scriptEngine) -> void;
+    auto LoadColours(const ScriptEngine& scriptEngine) -> void;
 
     auto CalculateAthletePositions() -> void;
     auto CalculateNewAthleteScoresAndPositions() -> void;
@@ -83,7 +94,11 @@ private:
     auto CalculatePixelsPerPoint() -> void;
     auto LoadOrdinalNumberTexts() -> void;
 
+    auto RenderSidebar(const Renderer& renderer) -> void;
     auto RenderOrdinalNumbers(const Renderer& renderer) -> void;
+    auto RenderAthleteScoreBar(const Renderer& renderer, const Athlete& athlete) -> void;
+    auto RenderAthleteName(const Renderer& renderer, const Athlete& athlete) -> void;
+    auto RenderAthleteScore(const Renderer& renderer, const Athlete& athlete) -> void;
 };
 
 #endif
