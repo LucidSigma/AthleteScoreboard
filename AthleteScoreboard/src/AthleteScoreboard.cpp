@@ -88,7 +88,7 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
 
 auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
 {
-    constexpr std::float_t SecondsPerFullInterpolation = 1.5f;
+    constexpr std::float_t SecondsPerFullInterpolation = 7.5f;
 
     switch (m_state)
     {
@@ -147,19 +147,31 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
         break;
 
     case State::DisplayEliminatedText:
-        std::ranges::sort(m_athletes, std::greater());
-
-        for (auto& athlete : std::ranges::reverse_view(m_athletes))
+        if (m_interpolation == 0.0f)
         {
-            if (!athlete.isEliminated)
-            {
-                athlete.isEliminated = true;
+            std::ranges::sort(m_athletes, std::greater());
 
-                break;
+            for (auto& athlete : std::ranges::reverse_view(m_athletes))
+            {
+                if (!athlete.isEliminated)
+                {
+                    athlete.isEliminated = true;
+                    m_newlyEliminatedAthleteName = athlete.name;
+
+                    break;
+                }
             }
         }
 
-        m_state = State::End;
+        m_interpolation += (1.0f / SecondsPerFullInterpolation) * deltaTime;
+
+        if (m_interpolation >= 1.0f)
+        {
+            m_interpolation = 1.0f;
+            m_newlyEliminatedAthleteName = "";
+
+            m_state = State::End;
+        }
 
         break;
     }
@@ -437,6 +449,13 @@ auto AthleteScoreboard::RenderAthleteScoreBarText(const Renderer& renderer, cons
             .h = static_cast<std::int32_t>(m_dimensions.barHeight),
         };
 
-        renderer.DrawTexture(m_eliminatedText, eliminatedTextArea, m_colours.eliminatedText);
+        SDL_Colour eliminatedTextColour = m_colours.eliminatedText;
+
+        if (m_newlyEliminatedAthleteName == athlete.name)
+        {
+            eliminatedTextColour.a = static_cast<std::uint8_t>(m_interpolation * 255.0f);
+        }
+
+        renderer.DrawTexture(m_eliminatedText, eliminatedTextArea, eliminatedTextColour);
     }
 }

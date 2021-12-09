@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -75,6 +76,7 @@ private:
 
     std::unordered_map<std::uint32_t, SDL_Texture*> m_ordinalNumberTexts{ };
     SDL_Texture* m_eliminatedText = nullptr;
+    std::string_view m_newlyEliminatedAthleteName = "";
 
     std::float_t m_interpolation = 0.0f;
 
