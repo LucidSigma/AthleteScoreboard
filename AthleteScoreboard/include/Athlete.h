@@ -12,7 +12,6 @@ struct [[nodiscard]] Athlete final
 {
     std::string name;
     SDL_Colour colour;
-    std::uint32_t ranking; // TODO: Remove.
 
     std::int32_t pointsToAdd;
     bool isEliminated;

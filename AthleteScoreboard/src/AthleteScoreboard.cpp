@@ -6,6 +6,7 @@
 #include <functional>
 #include <iterator>
 #include <stdexcept>
+#include <string>
 
 #include <sol/sol.hpp>
 #include <spdlog/spdlog.h>
@@ -77,6 +78,8 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
 
     CalculateMaxScoreTextWidth();
     CalculatePixelsPerPoint();
+
+    LoadOrdinalNumberTexts();
 }
 
 auto AthleteScoreboard::Update() -> void
@@ -115,6 +118,8 @@ auto AthleteScoreboard::Render(const Renderer& renderer) -> void
     };
 
     renderer.DrawRectangle(sidebar, m_sidebarColour);
+
+    RenderOrdinalNumbers(renderer);
 
     // Render each athlete.
     for (const auto& athlete : m_athletes)
@@ -162,21 +167,6 @@ auto AthleteScoreboard::Render(const Renderer& renderer) -> void
         };
 
         renderer.DrawTexture(athleteScoreText, currentAthleteScoreText);
-
-        // Render ordinal number.
-        const auto ordinalText = m_athleteTextCache.Get(GetOrdinalNumber(athlete.ranking));
-        const auto [ordinalWidth, ordinalHeight] = GetTextureSize(ordinalText);
-
-        const auto newOrdinalWidth = static_cast<std::int32_t>(static_cast<std::float_t>(ordinalWidth) / textureToBarRatio);
-
-        const SDL_Rect currentOrdinalText{
-            .x = m_dimensions.distanceBetweenOrdinalNumbersAndWindowLeft,
-            .y = athlete.originalPosition,
-            .w = newOrdinalWidth,
-            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
-        };
-
-        renderer.DrawTexture(ordinalText, currentOrdinalText);
     }
 }
 
@@ -229,7 +219,6 @@ auto AthleteScoreboard::CalculateAthletePositions() -> void
         m_athletes[i].originalPosition = static_cast<std::int32_t>(yOffset);
         m_athletes[i].currentPosition = static_cast<std::float_t>(m_athletes[i].originalPosition);
         m_athletes[i].currentScore = static_cast<std::float_t>(m_athletes[i].originalScore);
-        m_athletes[i].ranking = static_cast<std::uint32_t>(i + 1u);
 
         yOffset += static_cast<std::int32_t>(m_dimensions.barHeight + m_dimensions.distanceBetweenBars);
     }
@@ -285,4 +274,37 @@ auto AthleteScoreboard::CalculatePixelsPerPoint() -> void
         m_dimensions.distanceBetweenScoreTextAndWindowRight;
 
     m_pixelsPerPoint = static_cast<std::float_t>(maxScoreBarLength) / static_cast<std::float_t>(m_maxScore);
+}
+
+auto AthleteScoreboard::LoadOrdinalNumberTexts() -> void
+{
+    for (std::uint32_t i = 1u; i <= static_cast<std::uint32_t>(m_athletes.size()); ++i)
+    {
+        m_ordinalNumberTexts[i] = m_athleteTextCache.Get(GetOrdinalNumber(i));
+    }
+}
+
+auto AthleteScoreboard::RenderOrdinalNumbers(const Renderer& renderer) -> void
+{
+    std::int32_t yOffset = static_cast<std::int32_t>(m_dimensions.distanceBetweenBars);
+
+    for (std::uint32_t i = 1u; i <= static_cast<std::uint32_t>(m_athletes.size()); ++i)
+    {
+        const auto ordinalText = m_ordinalNumberTexts[i];
+        const auto [ordinalTextWidth, ordinalTextHeight] = GetTextureSize(ordinalText);
+        const std::float_t textureToBarRatio = static_cast<std::float_t>(ordinalTextHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+
+        const auto proportionalOrdinalTextWidth = static_cast<std::int32_t>(static_cast<std::float_t>(ordinalTextWidth) / textureToBarRatio);
+
+        const SDL_Rect currentOrdinalText{
+            .x = m_dimensions.distanceBetweenOrdinalNumbersAndWindowLeft,
+            .y = yOffset,
+            .w = proportionalOrdinalTextWidth,
+            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
+        };
+
+        renderer.DrawTexture(ordinalText, currentOrdinalText);
+
+        yOffset += static_cast<std::int32_t>(m_dimensions.barHeight + m_dimensions.distanceBetweenBars);
+    }
 }

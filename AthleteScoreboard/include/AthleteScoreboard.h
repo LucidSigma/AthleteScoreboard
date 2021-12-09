@@ -4,7 +4,7 @@
 
 #include <cmath>
 #include <cstdint>
-#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <SDL2/SDL.h>
@@ -52,6 +52,8 @@ private:
     TextCache m_eliminatedTextCache;
     TTF_Font* m_eliminatedFont = nullptr;
 
+    std::unordered_map<std::uint32_t, SDL_Texture*> m_ordinalNumberTexts{ };
+
     std::float_t m_interpolation = 0.0f;
 
     bool m_didInitialiseSuccessfully = false;
@@ -79,6 +81,9 @@ private:
 
     auto CalculateMaxScoreTextWidth() -> void;
     auto CalculatePixelsPerPoint() -> void;
+    auto LoadOrdinalNumberTexts() -> void;
+
+    auto RenderOrdinalNumbers(const Renderer& renderer) -> void;
 };
 
 #endif
