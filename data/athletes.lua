@@ -1,6 +1,9 @@
 COLOURS = {
-    background = create_colour(96, 96, 96),
-    sidebar = create_colour(64, 64, 64),
+    sidebar = create_colour(56, 56, 56),
+    background = create_colour(8, 16, 16),
+    ordinal_text = create_colour(255, 255, 255),
+    score_text = create_colour(255, 255, 255),
+    eliminated_text = create_colour(255, 0, 0),
 }
 
 DIMENSIONS = {
@@ -12,6 +15,7 @@ DIMENSIONS = {
     distance_between_bar_and_score_text = 12,
     distance_between_score_text_and_window_right = 12,
     distance_between_score_text_and_eliminated_text = 12,
+    distance_between_name_and_sidebar = 24,
     distance_between_ordinal_numbers_and_window_left = 12,
 }
 

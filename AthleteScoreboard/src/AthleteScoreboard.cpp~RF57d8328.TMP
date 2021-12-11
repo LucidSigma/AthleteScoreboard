@@ -236,7 +236,6 @@ auto AthleteScoreboard::LoadAthletes(const ScriptEngine& scriptEngine) -> void
                 .pointsToAdd = isAthleteEliminated ? 0 : athleteData.as<sol::table>()["points_to_add"],
                 .isEliminated = isAthleteEliminated,
                 .originalScore = athleteData.as<sol::table>()["current_score"],
-                .currentScore = athleteData.as<sol::table>()["current_score"],
             }
         );
     }
@@ -408,6 +407,22 @@ auto AthleteScoreboard::RenderAthleteName(const Renderer& renderer, const Athlet
         .w = newNameWidth,
         .h = static_cast<std::int32_t>(m_dimensions.barHeight),
     };
+
+    if (athlete.name == "Black")
+    {
+        TTF_SetFontOutline(m_athleteFont, 4);
+        const auto athleteNameOutlineText = m_athleteTextCache.Get(athlete.name);
+        TTF_SetFontOutline(m_athleteFont, 0);
+
+        const SDL_Rect athleteNameOutlineArea{
+            .x = m_dimensions.sidebarWidth - newNameWidth - m_dimensions.distanceBetweenNameAndSidebar - 4,
+            .y = static_cast<std::int32_t>(athlete.currentPosition) - 4,
+            .w = newNameWidth + 8,
+            .h = static_cast<std::int32_t>(m_dimensions.barHeight + 8),
+        };
+
+        renderer.DrawTexture(athleteNameOutlineText, athleteNameOutlineArea, SDL_Colour{ 0xFFu, 0XFFu, 0xFFu, SDL_ALPHA_OPAQUE });
+    }
 
     renderer.DrawTexture(athleteNameText, athleteNameArea, athlete.colour);
 }
