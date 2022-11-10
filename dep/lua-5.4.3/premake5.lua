@@ -11,6 +11,10 @@ project "lua"
         "src/**.c",
     }
 
+    removefiles {
+        "src/luac.c",
+    }
+
     includedirs { 
         "%{DependencyIncludes.lua}",
         "%{DependencyIncludes.lua}/lua",
