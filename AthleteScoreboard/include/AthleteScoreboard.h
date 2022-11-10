@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -67,6 +68,8 @@ private:
     std::uint32_t m_maxScore = 0u;
     std::int32_t m_maxScoreTextWidth = 0;
     std::float_t m_pixelsPerPoint = 0.0f;
+
+    std::function<auto(std::float_t) -> std::float_t> m_easingFunction;
 
     TextCache m_athleteTextCache;
     TTF_Font* m_athleteFont = nullptr;

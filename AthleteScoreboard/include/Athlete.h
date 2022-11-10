@@ -3,6 +3,7 @@
 #define ATHLETE_H
 
 #include <cmath>
+#include <compare>
 #include <cstdint>
 #include <string>
 
@@ -20,12 +21,11 @@ struct [[nodiscard]] Athlete final
     std::float_t currentScore;
     std::uint32_t newScore;
 
-
     std::int32_t originalPosition;
     std::float_t currentPosition;
     std::int32_t newPosition;
 };
 
-[[nodiscard]] extern auto operator >(const Athlete& lhs, const Athlete& rhs) noexcept -> bool;
+[[nodiscard]] extern auto operator <=>(const Athlete& lhs, const Athlete& rhs) noexcept -> std::partial_ordering;
 
 #endif

@@ -21,6 +21,8 @@ try
     LoadDimensions(scriptEngine);
     LoadColours(scriptEngine);
 
+    m_easingFunction = scriptEngine["EASINGS"]["ordering"].get<std::function<auto(std::float_t) -> std::float_t>>();
+
     CalculateAthletePositions();
     CalculateNewAthleteScoresAndPositions();
 
@@ -126,7 +128,7 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
         {
             for (auto& athlete : m_athletes)
             {
-                athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), m_interpolation);
+                athlete.currentPosition = std::lerp(static_cast<std::float_t>(athlete.originalPosition), static_cast<std::float_t>(athlete.newPosition), m_easingFunction(m_interpolation));
             }
 
             m_interpolation += (1.0f / SecondsPerFullInterpolation) * deltaTime;

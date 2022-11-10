@@ -24,6 +24,12 @@ FONTS = {
     eliminated = "data/fonts/Manrope-ExtraBold.ttf",
 }
 
+EASINGS = {
+    ordering = function(x)
+        return 1.0 - ((1.0 - x) ^ 2.0)
+    end,
+}
+
 ATHLETES = {
     Azure = {
         colour = create_colour(0, 127, 255),
