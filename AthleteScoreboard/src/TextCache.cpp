@@ -1,8 +1,20 @@
 #include "TextCache.h"
 
+#include <spdlog/spdlog.h>
+
 TextCache::TextCache(TTF_Font* const font, const Renderer& renderer)
     : m_font(font), m_renderer(&renderer)
 { }
+
+TextCache::~TextCache() noexcept
+{
+    for (const auto& [name, texture] : m_textureLookup)
+    {
+        SDL_DestroyTexture(texture);
+    }
+
+    m_textureLookup.clear();
+}
 
 auto TextCache::Initialise(TTF_Font* const font, const Renderer& renderer) -> void
 {
@@ -18,10 +30,25 @@ auto TextCache::Initialise(TTF_Font* const font, const Renderer& renderer) -> vo
 
         if (textSurface == nullptr)
         {
+            spdlog::error("Failed to create pixel surface for text \"{}\".", text);
+
             return nullptr;
         }
 
-        m_textureLookup[text] = SDL_CreateTextureFromSurface(m_renderer->GetRawHandle(), textSurface);
+        if (const auto textTexture = SDL_CreateTextureFromSurface(m_renderer->GetRawHandle(), textSurface);
+            textTexture != nullptr)
+        {
+            m_textureLookup.try_emplace(text, textTexture);
+        }
+        else
+        {
+            spdlog::error("Failed to create texture for text \"{}\".", text);
+
+            return nullptr;
+        }
+
+        SDL_FreeSurface(textSurface);
+        textSurface = nullptr;
     }
 
     const auto texture = m_textureLookup.at(text);

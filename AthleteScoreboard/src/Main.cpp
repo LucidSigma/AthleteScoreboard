@@ -14,7 +14,7 @@
 #include "ScriptEngine.h"
 #include "Window.h"
 
-auto main(const std::int32_t argc, char** const argv) -> int
+auto main([[maybe_unused]] const std::int32_t argc, [[maybe_unused]] char** const argv) -> int
 {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
     {

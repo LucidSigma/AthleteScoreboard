@@ -21,6 +21,7 @@ private:
 public:
     TextCache() = default;
     TextCache(TTF_Font* const font, const Renderer& renderer);
+    ~TextCache() noexcept;
 
     auto Initialise(TTF_Font* const font, const Renderer& renderer) -> void;
 

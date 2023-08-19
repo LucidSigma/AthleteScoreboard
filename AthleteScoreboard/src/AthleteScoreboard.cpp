@@ -151,7 +151,7 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
     case State::DisplayEliminatedText:
         if (m_interpolation == 0.0f)
         {
-            std::ranges::sort(m_athletes, std::greater());
+            std::ranges::sort(m_athletes, std::greater{ });
 
             for (auto& athlete : std::ranges::reverse_view(m_athletes))
             {
@@ -175,6 +175,9 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
             m_state = State::End;
         }
 
+        break;
+
+    [[unlikely]] default:
         break;
     }
 }
