@@ -26,6 +26,10 @@ ScriptEngine::ScriptEngine()
             function create_colour(r, g, b)
                 return sdl_colour.new(r, g, b, 0xFF)
             end
+
+            function create_color(r, g, b)
+                return sdl_colour.new(r, g, b, 0xFF)
+            end
         )LUA",
         sol::script_pass_on_error
     );

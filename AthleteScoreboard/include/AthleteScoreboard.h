@@ -37,7 +37,7 @@ private:
         std::uint32_t barHeight = 0u;
         std::uint32_t distanceBetweenBars = 0u;
 
-        std::int32_t minScoreBarLength = 0;
+        std::int32_t minimumScoreBarLength = 0;
         std::int32_t sidebarWidth = 0;
         std::int32_t distanceBetweenBarAndScoreText = 0;
         std::int32_t distanceBetweenScoreTextAndWindowRight = 0;
@@ -45,6 +45,7 @@ private:
         std::int32_t distanceBetweenNameAndSidebar = 0;
 
         std::int32_t distanceBetweenOrdinalNumbersAndWindowLeft = 0;
+        std::int32_t distanceBetweenEliminatedTextAndWindowRight = 0;
     };
 
     struct [[nodiscard]] Colours final
@@ -65,8 +66,8 @@ private:
     Colours m_colours{ };
 
     std::vector<Athlete> m_athletes{ };
-    std::uint32_t m_maxScore = 0u;
-    std::int32_t m_maxScoreTextWidth = 0;
+    std::uint32_t m_maximumScore = 0u;
+    std::int32_t m_maximumScoreTextWidth = 0;
     std::float_t m_pixelsPerPoint = 0.0f;
 
     std::function<auto(std::float_t) -> std::float_t> m_easingFunction;
@@ -108,11 +109,11 @@ private:
     auto CalculateAthletePositions() -> void;
     auto CalculateNewAthleteScoresAndPositions() -> void;
 
-    auto CalculateMaxScoreTextWidth() -> void;
+    auto CalculateMaximumScoreTextWidth() -> void;
     auto CalculatePixelsPerPoint() -> void;
     auto LoadOrdinalNumberTexts() -> void;
 
-    auto RenderSidebar(const Renderer& renderer) -> void;
+    auto RenderSidebar(const Renderer& renderer) const -> void;
     auto RenderOrdinalNumbers(const Renderer& renderer) -> void;
     auto RenderAthleteScoreBar(const Renderer& renderer, const Athlete& athlete) -> void;
     auto RenderAthleteName(const Renderer& renderer, const Athlete& athlete) -> void;

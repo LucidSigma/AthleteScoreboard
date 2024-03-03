@@ -4,7 +4,12 @@
 {
     if (lhs.currentScore == rhs.currentScore)
     {
-        return lhs.name <=> rhs.name;
+        if (lhs.originalScore == rhs.originalScore)
+        {
+            return lhs.name <=> rhs.name;
+        }
+
+        return lhs.originalScore <=> rhs.originalScore;
     }
 
     return lhs.currentScore <=> rhs.currentScore;

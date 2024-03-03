@@ -41,6 +41,10 @@ project "AthleteScoreboard"
         "spdlog",
     }
 
+    defines {
+        "_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING",
+    }
+
     filter "configurations:Debug"
         defines { "DEBUG" }
         runtime "Debug"

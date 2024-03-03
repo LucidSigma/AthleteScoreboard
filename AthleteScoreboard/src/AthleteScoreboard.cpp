@@ -82,7 +82,7 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
 
     m_eliminatedText = m_eliminatedTextCache.Get("ELIMINATED");
 
-    CalculateMaxScoreTextWidth();
+    CalculateMaximumScoreTextWidth();
     CalculatePixelsPerPoint();
 
     LoadOrdinalNumberTexts();
@@ -254,13 +254,14 @@ auto AthleteScoreboard::LoadDimensions(const ScriptEngine& scriptEngine) -> void
     m_dimensions.aspectRatio = scriptEngine["DIMENSIONS"]["aspect_ratio"];
     m_dimensions.barHeight = scriptEngine["DIMENSIONS"]["bar_height"];
     m_dimensions.distanceBetweenBars = scriptEngine["DIMENSIONS"]["distance_between_bars"];
-    m_dimensions.minScoreBarLength = scriptEngine["DIMENSIONS"]["min_score_bar_length"];
+    m_dimensions.minimumScoreBarLength = scriptEngine["DIMENSIONS"]["minimum_score_bar_length"];
     m_dimensions.sidebarWidth = scriptEngine["DIMENSIONS"]["sidebar_width"];
     m_dimensions.distanceBetweenBarAndScoreText = scriptEngine["DIMENSIONS"]["distance_between_bar_and_score_text"];
     m_dimensions.distanceBetweenScoreTextAndWindowRight = scriptEngine["DIMENSIONS"]["distance_between_score_text_and_window_right"];
     m_dimensions.distanceBetweenScoreTextAndEliminatedText = scriptEngine["DIMENSIONS"]["distance_between_score_text_and_eliminated_text"];
     m_dimensions.distanceBetweenNameAndSidebar = scriptEngine["DIMENSIONS"]["distance_between_name_and_sidebar"];
     m_dimensions.distanceBetweenOrdinalNumbersAndWindowLeft = scriptEngine["DIMENSIONS"]["distance_between_ordinal_numbers_and_window_left"];
+    m_dimensions.distanceBetweenEliminatedTextAndWindowRight = scriptEngine["DIMENSIONS"]["distance_between_eliminated_text_and_window_right"];
 
     m_windowHeight = static_cast<std::float_t>(
         (static_cast<std::uint32_t>(m_athletes.size()) * (m_dimensions.barHeight + m_dimensions.distanceBetweenBars)) + m_dimensions.distanceBetweenBars
@@ -293,12 +294,12 @@ auto AthleteScoreboard::CalculateAthletePositions() -> void
 auto AthleteScoreboard::CalculateNewAthleteScoresAndPositions() -> void
 {
     std::vector<Athlete> newAthletes = m_athletes;
-    m_maxScore = 0u;
+    m_maximumScore = 0u;
 
     for (auto& athlete : newAthletes)
     {
         athlete.currentScore += static_cast<std::float_t>(athlete.pointsToAdd);
-        m_maxScore = std::max(m_maxScore, static_cast<std::uint32_t>(athlete.currentScore));
+        m_maximumScore = std::max(m_maximumScore, static_cast<std::uint32_t>(athlete.currentScore));
     }
 
     std::ranges::sort(newAthletes, std::greater());
@@ -321,25 +322,30 @@ auto AthleteScoreboard::CalculateNewAthleteScoresAndPositions() -> void
     }
 }
 
-auto AthleteScoreboard::CalculateMaxScoreTextWidth() -> void
+auto AthleteScoreboard::CalculateMaximumScoreTextWidth() -> void
 {
-    const auto maxScoreText = m_athleteTextCache.Get(std::to_string(m_maxScore));
-    const auto [maxScoreTextWidth, maxScoreTextHeight] = GetTextureSize(maxScoreText);
-    const std::float_t maxScoreRatio = static_cast<std::float_t>(maxScoreTextHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
-    m_maxScoreTextWidth = static_cast<std::int32_t>(static_cast<std::float_t>(maxScoreTextWidth) / maxScoreRatio);
+    const auto maximumScoreText = m_athleteTextCache.Get(std::to_string(m_maximumScore));
+    const auto [maximumScoreTextWidth, maximumScoreTextHeight] = GetTextureSize(maximumScoreText);
+    const std::float_t maximumScoreRatio = static_cast<std::float_t>(maximumScoreTextHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+
+    m_maximumScoreTextWidth = static_cast<std::int32_t>(static_cast<std::float_t>(maximumScoreTextWidth) / maximumScoreRatio);
 }
 
 auto AthleteScoreboard::CalculatePixelsPerPoint() -> void
 {
-    const std::int32_t maxScoreBarLength =
+    const auto [eliminatedTextWidth, eliminatedTextHeight] = GetTextureSize(m_eliminatedText);
+
+    const std::int32_t maximumScoreBarLength =
         static_cast<std::int32_t>(m_windowHeight * m_dimensions.aspectRatio) -
         m_dimensions.sidebarWidth -
-        m_maxScoreTextWidth -
-        m_dimensions.minScoreBarLength -
+        m_maximumScoreTextWidth -
+        m_dimensions.minimumScoreBarLength -
         m_dimensions.distanceBetweenBarAndScoreText -
-        m_dimensions.distanceBetweenScoreTextAndWindowRight;
+        m_dimensions.distanceBetweenScoreTextAndWindowRight -
+        static_cast<std::int32_t>(eliminatedTextWidth) -
+        m_dimensions.distanceBetweenEliminatedTextAndWindowRight;
 
-    m_pixelsPerPoint = static_cast<std::float_t>(maxScoreBarLength) / static_cast<std::float_t>(m_maxScore);
+    m_pixelsPerPoint = static_cast<std::float_t>(maximumScoreBarLength) / static_cast<std::float_t>(m_maximumScore);
 }
 
 auto AthleteScoreboard::LoadOrdinalNumberTexts() -> void
@@ -350,7 +356,7 @@ auto AthleteScoreboard::LoadOrdinalNumberTexts() -> void
     }
 }
 
-auto AthleteScoreboard::RenderSidebar(const Renderer& renderer) -> void
+auto AthleteScoreboard::RenderSidebar(const Renderer& renderer) const -> void
 {
     const SDL_Rect sidebarArea{
         .x = 0,
@@ -392,7 +398,7 @@ auto AthleteScoreboard::RenderAthleteScoreBar(const Renderer& renderer, const At
     const SDL_Rect athleteScoreBarArea{
             .x = m_dimensions.sidebarWidth,
             .y = static_cast<std::int32_t>(athlete.currentPosition),
-            .w = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) + m_dimensions.minScoreBarLength,
+            .w = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) + m_dimensions.minimumScoreBarLength,
             .h = static_cast<std::int32_t>(m_dimensions.barHeight),
     };
 
@@ -427,7 +433,7 @@ auto AthleteScoreboard::RenderAthleteScoreBarText(const Renderer& renderer, cons
 
     const SDL_Rect athleteScoreTextArea{
         .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
-            m_dimensions.minScoreBarLength +
+            m_dimensions.minimumScoreBarLength +
             m_dimensions.distanceBetweenBarAndScoreText +
             m_dimensions.sidebarWidth,
         .y = static_cast<std::int32_t>(athlete.currentPosition),
@@ -445,7 +451,7 @@ auto AthleteScoreboard::RenderAthleteScoreBarText(const Renderer& renderer, cons
 
         const SDL_Rect eliminatedTextArea{
             .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
-                m_dimensions.minScoreBarLength +
+                m_dimensions.minimumScoreBarLength +
                 m_dimensions.distanceBetweenBarAndScoreText +
                 m_dimensions.sidebarWidth +
                 newScoreWidth +

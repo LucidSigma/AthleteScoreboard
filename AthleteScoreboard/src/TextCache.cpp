@@ -19,6 +19,9 @@ TextCache::~TextCache() noexcept
 auto TextCache::Initialise(TTF_Font* const font, const Renderer& renderer) -> void
 {
     m_font = font;
+    TTF_SetFontDirection(m_font, TTF_DIRECTION_LTR);
+    TTF_SetFontScriptName(m_font, "Latn");
+
     m_renderer = &renderer;
 }
 
