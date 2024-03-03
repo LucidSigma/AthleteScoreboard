@@ -1,21 +1,21 @@
 DEPENDENCIES = {
     lua = {
-        version = "5.4.3",
+        version = "5.4.6",
         has_premake_file = true,
     },
     SDL2 = {
-        version = "2.0.18",
+        version = "2.30.0",
         is_precompiled = true,
     },
     SDL2_ttf = {
-        version = "2.0.15",
+        version = "2.22.0",
         is_precompiled = true,
     },
     sol2 = {
-        version = "3.2.2",
+        version = "3.3.0",
     },
     spdlog = {
-        version = "1.9.2",
+        version = "1.13.0",
         has_premake_file = true,
     },
 }
