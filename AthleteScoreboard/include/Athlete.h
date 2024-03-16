@@ -16,6 +16,7 @@ struct [[nodiscard]] Athlete final
 
     std::int32_t pointsToAdd;
     bool isEliminated;
+    bool isWinner;
 
     std::uint32_t originalScore;
     std::float_t currentScore;

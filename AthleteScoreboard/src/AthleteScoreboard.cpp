@@ -19,6 +19,7 @@ try
 {
     LoadAthletes(scriptEngine);
     LoadDimensions(scriptEngine);
+    LoadEliminations(scriptEngine);
     LoadColours(scriptEngine);
 
     m_easingFunction = scriptEngine["EASINGS"]["ordering"].get<std::function<auto(std::float_t) -> std::float_t>>();
@@ -81,6 +82,7 @@ auto AthleteScoreboard::LoadTextCaches(const ScriptEngine& scriptEngine, const R
     m_eliminatedTextCache.Initialise(m_eliminatedFont, renderer);
 
     m_eliminatedText = m_eliminatedTextCache.Get("ELIMINATED");
+    m_winnerText = m_eliminatedTextCache.Get("WINNER");
 
     CalculateMaximumScoreTextWidth();
     CalculatePixelsPerPoint();
@@ -153,15 +155,26 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
         {
             std::ranges::sort(m_athletes, std::greater{ });
 
-            for (auto& athlete : std::ranges::reverse_view(m_athletes))
+            for (std::uint32_t newlyEliminatedAthleteCount = 0u;
+                auto& athlete : std::views::reverse(m_athletes))
             {
                 if (!athlete.isEliminated)
                 {
                     athlete.isEliminated = true;
-                    m_newlyEliminatedAthleteName = athlete.name;
+                    m_newlyEliminatedAthleteNames.insert(athlete.name);
 
-                    break;
+                    ++newlyEliminatedAthleteCount;
+
+                    if (newlyEliminatedAthleteCount >= m_eliminations.athletesToEliminate)
+                    {
+                        break;
+                    }
                 }
+            }
+
+            if (!m_athletes.front().isEliminated)
+            {
+                m_athletes.front().isWinner = true;
             }
         }
 
@@ -170,7 +183,7 @@ auto AthleteScoreboard::Update(const std::float_t deltaTime) -> void
         if (m_interpolation >= 1.0f)
         {
             m_interpolation = 1.0f;
-            m_newlyEliminatedAthleteName = "";
+            m_newlyEliminatedAthleteNames.clear();
 
             m_state = State::End;
         }
@@ -240,6 +253,7 @@ auto AthleteScoreboard::LoadAthletes(const ScriptEngine& scriptEngine) -> void
                 .colour = athleteData.as<sol::table>()["colour"],
                 .pointsToAdd = isAthleteEliminated ? 0 : athleteData.as<sol::table>()["points_to_add"],
                 .isEliminated = isAthleteEliminated,
+                .isWinner = false,
                 .originalScore = athleteData.as<sol::table>()["current_score"],
                 .currentScore = athleteData.as<sol::table>()["current_score"],
             }
@@ -268,6 +282,12 @@ auto AthleteScoreboard::LoadDimensions(const ScriptEngine& scriptEngine) -> void
     );
 }
 
+auto AthleteScoreboard::LoadEliminations(const ScriptEngine& scriptEngine) -> void
+{
+    m_eliminations.athletesToEliminate = scriptEngine["ELIMINATIONS"]["athletes_to_eliminate"];
+    m_eliminations.showWinnerText = scriptEngine["ELIMINATIONS"]["show_winner_text"];
+}
+
 auto AthleteScoreboard::LoadColours(const ScriptEngine& scriptEngine) -> void
 {
     m_colours.background = scriptEngine["COLOURS"]["background"];
@@ -275,6 +295,7 @@ auto AthleteScoreboard::LoadColours(const ScriptEngine& scriptEngine) -> void
     m_colours.ordinalText = scriptEngine["COLOURS"]["ordinal_text"];
     m_colours.scoreText = scriptEngine["COLOURS"]["score_text"];
     m_colours.eliminatedText = scriptEngine["COLOURS"]["eliminated_text"];
+    m_colours.winnerText = scriptEngine["COLOURS"]["winner_text"];
 }
 
 auto AthleteScoreboard::CalculateAthletePositions() -> void
@@ -334,6 +355,7 @@ auto AthleteScoreboard::CalculateMaximumScoreTextWidth() -> void
 auto AthleteScoreboard::CalculatePixelsPerPoint() -> void
 {
     const auto [eliminatedTextWidth, eliminatedTextHeight] = GetTextureSize(m_eliminatedText);
+    const auto [winnerTextWidth, winnerTextHeight] = GetTextureSize(m_winnerText);
 
     const std::int32_t maximumScoreBarLength =
         static_cast<std::int32_t>(m_windowHeight * m_dimensions.aspectRatio) -
@@ -342,7 +364,7 @@ auto AthleteScoreboard::CalculatePixelsPerPoint() -> void
         m_dimensions.minimumScoreBarLength -
         m_dimensions.distanceBetweenBarAndScoreText -
         m_dimensions.distanceBetweenScoreTextAndWindowRight -
-        static_cast<std::int32_t>(eliminatedTextWidth) -
+        static_cast<std::int32_t>(std::max(eliminatedTextWidth, winnerTextWidth)) -
         m_dimensions.distanceBetweenEliminatedTextAndWindowRight;
 
     m_pixelsPerPoint = static_cast<std::float_t>(maximumScoreBarLength) / static_cast<std::float_t>(m_maximumScore);
@@ -463,11 +485,35 @@ auto AthleteScoreboard::RenderAthleteScoreBarText(const Renderer& renderer, cons
 
         SDL_Colour eliminatedTextColour = m_colours.eliminatedText;
 
-        if (m_newlyEliminatedAthleteName == athlete.name)
+        if (m_newlyEliminatedAthleteNames.contains(athlete.name))
         {
             eliminatedTextColour.a = static_cast<std::uint8_t>(m_interpolation * 255.0f);
+
         }
 
         renderer.DrawTexture(m_eliminatedText, eliminatedTextArea, eliminatedTextColour);
+    }
+    else if (m_eliminations.showWinnerText && athlete.isWinner)
+    {
+        const auto [winnerTextWidth, winnnerTextHeight] = GetTextureSize(m_winnerText);
+        const std::float_t winnerTextureToBarRatio = static_cast<std::float_t>(winnnerTextHeight) / static_cast<std::float_t>(m_dimensions.barHeight);
+        const std::int32_t newEliminatedTextWidth = static_cast<std::int32_t>(static_cast<std::float_t>(winnerTextWidth) / winnerTextureToBarRatio);
+
+        const SDL_Rect winnerTextArea{
+            .x = static_cast<std::int32_t>(athlete.currentScore * m_pixelsPerPoint) +
+            m_dimensions.minimumScoreBarLength +
+            m_dimensions.distanceBetweenBarAndScoreText +
+            m_dimensions.sidebarWidth +
+            newScoreWidth +
+            m_dimensions.distanceBetweenScoreTextAndEliminatedText,
+            .y = static_cast<std::int32_t>(athlete.currentPosition),
+            .w = newEliminatedTextWidth,
+            .h = static_cast<std::int32_t>(m_dimensions.barHeight),
+        };
+
+        SDL_Colour winnerTextColour = m_colours.winnerText;
+        winnerTextColour.a = static_cast<std::uint8_t>(m_interpolation * 255.0f);
+
+        renderer.DrawTexture(m_winnerText, winnerTextArea, winnerTextColour);
     }
 }

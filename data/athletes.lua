@@ -4,6 +4,7 @@ COLOURS = {
     ordinal_text = create_colour(255, 255, 255),
     score_text = create_colour(255, 255, 255),
     eliminated_text = create_colour(255, 0, 0),
+    winner_text = create_colour(0, 255, 0),
 }
 
 DIMENSIONS = {
@@ -18,6 +19,11 @@ DIMENSIONS = {
     distance_between_name_and_sidebar = 24,
     distance_between_ordinal_numbers_and_window_left = 12,
     distance_between_eliminated_text_and_window_right = 24,
+}
+
+ELIMINATIONS = {
+    athletes_to_eliminate = 1,
+    show_winner_text = false,
 }
 
 FONTS = {

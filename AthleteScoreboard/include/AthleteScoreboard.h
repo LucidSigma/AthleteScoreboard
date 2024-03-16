@@ -7,6 +7,7 @@
 #include <functional>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <SDL2/SDL.h>
@@ -48,6 +49,12 @@ private:
         std::int32_t distanceBetweenEliminatedTextAndWindowRight = 0;
     };
 
+    struct [[nodiscard]] Eliminations final
+    {
+        std::uint32_t athletesToEliminate = 0u;
+        bool showWinnerText = false;
+    };
+
     struct [[nodiscard]] Colours final
     {
         SDL_Colour background{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
@@ -55,6 +62,7 @@ private:
         SDL_Colour ordinalText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
         SDL_Colour scoreText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
         SDL_Colour eliminatedText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
+        SDL_Colour winnerText{ 0x00u, 0x00u, 0x00u, SDL_ALPHA_OPAQUE };
     };
 
     State m_state = State::Idle;
@@ -63,6 +71,7 @@ private:
     Dimensions m_dimensions{ };
     std::float_t m_windowHeight = 0.0f;
 
+    Eliminations m_eliminations{ };
     Colours m_colours{ };
 
     std::vector<Athlete> m_athletes{ };
@@ -80,7 +89,8 @@ private:
 
     std::unordered_map<std::uint32_t, SDL_Texture*> m_ordinalNumberTexts{ };
     SDL_Texture* m_eliminatedText = nullptr;
-    std::string_view m_newlyEliminatedAthleteName = "";
+    SDL_Texture* m_winnerText = nullptr;
+    std::unordered_set<std::string> m_newlyEliminatedAthleteNames{ };
 
     std::float_t m_interpolation = 0.0f;
 
@@ -104,6 +114,7 @@ public:
 private:
     auto LoadAthletes(const ScriptEngine& scriptEngine) -> void;
     auto LoadDimensions(const ScriptEngine& scriptEngine) -> void;
+    auto LoadEliminations(const ScriptEngine& scriptEngine) -> void;
     auto LoadColours(const ScriptEngine& scriptEngine) -> void;
 
     auto CalculateAthletePositions() -> void;
